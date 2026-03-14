@@ -4,6 +4,7 @@
 *.pyo
 .pytest_cache/
 .pytest_tmp/
+bet_agent/pytest-cache-files-*/
 .ruff_cache/
 .mypy_cache/
 .coverage

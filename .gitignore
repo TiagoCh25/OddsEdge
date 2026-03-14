@@ -1,0 +1,39 @@
+# Python
+**/__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.pytest_tmp/
+.ruff_cache/
+.mypy_cache/
+.coverage
+
+# Virtualenv
+.venv/
+venv/
+env/
+
+# Secrets
+bet_agent/.env
+bet_agent/.env.local
+bet_agent/.env.prd
+
+# Runtime data
+bet_agent/data/*
+!bet_agent/data/.gitkeep
+bet_agent/db_local/
+bet_agent/runtime/
+bet_agent/*.db
+bet_agent/*.db-journal
+bet_agent/data/*.db
+bet_agent/data/*.db-journal
+bet_agent/data/cache_matches.json
+
+# Temporary backups
+bet_agent/web/backup_ui_*/
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

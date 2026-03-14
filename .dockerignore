@@ -1,0 +1,14 @@
+.git
+.github
+**/__pycache__
+**/*.pyc
+.pytest_cache
+.ruff_cache
+.venv
+venv
+bet_agent/.env
+bet_agent/.env.local
+bet_agent/.env.prd
+bet_agent/data
+bet_agent/db_local
+bet_agent/web/backup_ui_*

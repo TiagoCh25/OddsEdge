@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: bet-agent
+    env: python
+    rootDir: bet_agent
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -B main.py run-all
+    autoDeploy: true
+    envVars:
+      - key: APP_ENV
+        value: prd
+      - key: ENABLE_IDLE_SHUTDOWN
+        value: "false"
+      - key: REQUESTS_TRUST_ENV
+        value: "false"
+      - key: USE_SAMPLE_DATA
+        value: "false"
+      - key: ODDS_ONLY_ACTIVE_SPORTS
+        value: "true"
+      - key: ODDS_MAX_SPORTS_PER_RUN
+        value: "2"
+      - key: ODDS_SPORTS
+        value: soccer_italy_serie_a,soccer_spain_la_liga,soccer_epl,soccer_brazil_campeonato

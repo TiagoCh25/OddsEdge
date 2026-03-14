@@ -1,0 +1,45 @@
+services:
+  bet-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bet-agent
+    env_file:
+      - ./bet_agent/.env.prd
+    environment:
+      APP_ENV: prd
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: 8000
+      ENABLE_IDLE_SHUTDOWN: "false"
+      DATA_DIR: /app/runtime
+      DIRETORIO_BANCO: /app/runtime
+    ports:
+      - "8000:8000"
+    volumes:
+      - bet_agent_runtime:/app/runtime
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8000/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  bet-agent-pipeline:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    profiles: ["ops"]
+    env_file:
+      - ./bet_agent/.env.prd
+    environment:
+      APP_ENV: prd
+      ENABLE_IDLE_SHUTDOWN: "false"
+      DATA_DIR: /app/runtime
+      DIRETORIO_BANCO: /app/runtime
+    command: ["python", "-B", "main.py", "pipeline"]
+    volumes:
+      - bet_agent_runtime:/app/runtime
+
+volumes:
+  bet_agent_runtime:

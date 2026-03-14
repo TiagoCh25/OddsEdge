@@ -1,0 +1,9 @@
+[Unit]
+Description=Bet Agent daily pipeline
+Requires=docker.service
+After=docker.service bet-agent-compose.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/bet-agent
+ExecStart=/usr/bin/docker compose run --rm --profile ops bet-agent-pipeline

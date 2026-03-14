@@ -1,90 +1,63 @@
-# Publicar o Bet Agent na Web (passo a passo)
+# Publicar na Web
 
-Este guia mostra como deixar o sistema online, para abrir por link e nao apenas no seu PC.
+Este guia cobre duas rotas:
 
-## Opcao recomendada para comecar: Render
+- deploy simples em plataforma gerenciada
+- deploy profissional em VPS
 
-E a forma mais simples para quem nao quer configurar servidor manual.
+## Opcao 1: Render
 
-O repositorio ja inclui um arquivo pronto `render.yaml` na raiz do projeto.
+Boa para colocar o projeto no ar rapidamente.
 
-## 1) Preparar o projeto
+### Preparacao
 
-1. Suba o projeto em um repositorio GitHub.
-2. Garanta que o projeto tenha:
-   - `requirements.txt`
-   - `main.py`
-   - este app ja usa `0.0.0.0` e porta por variavel (ok para cloud)
+1. Suba o projeto no GitHub.
+2. Garanta que o Render use a pasta `bet_agent` como raiz.
+3. Use o `render.yaml` ja incluido na raiz do repositorio.
 
-## 2) Criar servico no Render
+### Configuracao esperada
 
-1. Acesse o Render e conecte seu GitHub.
-2. Clique em `New +` -> `Web Service`.
-3. Selecione o repositorio.
-4. Configure:
-   - Build Command: `pip install -r requirements.txt`
-   - Start Command: `python -B main.py`
-   - Root Directory: `bet_agent` (importante)
+- Build Command: `pip install -r requirements.txt`
+- Start Command: `python -B main.py run-all`
+- Root Directory: `bet_agent`
 
-Se quiser, use o `Blueprint` do Render com o `render.yaml`.
+### Variaveis recomendadas
 
-## 3) Variaveis de ambiente no Render
-
-Adicione estas variaveis:
-
-- `API_FOOTBALL_KEY`
-- `THE_ODDS_API_KEY`
-- `API_FOOTBALL_AUTH_MODE=apisports`
+- `APP_ENV=prd`
+- `ENABLE_IDLE_SHUTDOWN=false`
 - `REQUESTS_TRUST_ENV=false`
 - `USE_SAMPLE_DATA=false`
-- `ENABLE_IDLE_SHUTDOWN=false`
-- `APP_ENV=prd`
 - `ODDS_ONLY_ACTIVE_SPORTS=true`
 - `ODDS_MAX_SPORTS_PER_RUN=2`
 - `ODDS_SPORTS=soccer_italy_serie_a,soccer_spain_la_liga,soccer_epl,soccer_brazil_campeonato`
+- `API_FOOTBALL_KEY`
+- `THE_ODDS_API_KEY`
 
-Observacao:
+### Observacao importante
 
-- `ENABLE_IDLE_SHUTDOWN=false` evita que o servidor desligue por falta de abas locais.
-- `APP_ENV=prd` ativa padrao de producao na configuracao.
+Em plataforma gerenciada, o banco SQLite e util para MVP, mas o ideal para operacao duravel continua sendo usar volume persistente ou migrar no futuro para um banco servidor.
 
-## 4) Deploy
+## Opcao 2: VPS
 
-1. Clique em `Create Web Service`.
-2. Aguarde build/deploy finalizar.
-3. Abra a URL publica fornecida pelo Render.
+Esta e a rota recomendada para maior controle.
 
-## 5) Se quiser dominio proprio
+Passos resumidos:
 
-No Render:
+1. clonar o repositorio na VPS
+2. criar `bet_agent/.env.prd`
+3. subir com `docker compose up -d --build`
+4. configurar Nginx
+5. configurar HTTPS
+6. configurar timer do pipeline
 
-1. abra o servico
-2. menu `Settings` -> `Custom Domains`
-3. siga o DNS informado (CNAME/A)
+Guia detalhado:
 
-## 6) Boas praticas de operacao
+- [DEPLOY_VPS.md](DEPLOY_VPS.md)
 
-- nunca subir chave de API no codigo
+## Boas praticas
+
+- nunca commitar segredos
 - usar apenas variaveis de ambiente
-- revisar consumo de creditos da The Odds API
-- reduzir ligas com `ODDS_MAX_SPORTS_PER_RUN`
-
-## 7) Atualizacao diaria dos jogos
-
-O pipeline roda no startup do app.
-
-Para garantir dados sempre renovados:
-
-- faca um redeploy diario (ou restart agendado da aplicacao)
-
-Em muitos provedores isso pode ser feito com job agendado ou deploy hook.
-
-## 8) Problemas comuns
-
-1. "Sem jogos" ou "Falha temporaria":
-   - verificar creditos da The Odds API
-   - verificar chaves no painel da cloud
-2. Erro de porta:
-   - manter `SERVER_PORT` vazio e deixar o provedor controlar `PORT`
-3. App "dorme":
-   - em planos gratuitos isso e normal
+- manter `ENABLE_IDLE_SHUTDOWN=false` em producao
+- revisar consumo da The Odds API
+- testar `GET /health` apos cada deploy

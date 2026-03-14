@@ -1,190 +1,85 @@
-﻿# Bet Agent (Futebol + EV)
+# Bet Agent
 
-Aplicacao em Python para buscar jogos de futebol, estimar probabilidades com Poisson, calcular Expected Value (EV) e exibir apostas recomendadas em interface web.
+Guia principal da aplicacao.
 
-## 1) Requisitos
+## Visao geral
 
-- Python 3.10+
-- Chaves de API:
-  - API-Football
-  - The Odds API
+O Bet Agent faz este fluxo:
 
-Guias completos:
+1. busca jogos de futebol do dia
+2. busca odds por liga
+3. coleta estatisticas recentes dos times
+4. calcula probabilidades com modelo de Poisson
+5. calcula EV por mercado
+6. filtra apostas recomendadas
+7. salva cache atual em JSON
+8. salva historico em SQLite
+9. sobe a interface web em FastAPI
 
-- [Guia para leigos](docs/GUIA_LEIGO.md)
-- [Publicar na web](docs/PUBLICAR_NA_WEB.md)
+## Requisitos
 
-## 2) Instalacao
+- Python 3.10 ou superior
+- chave da API-Football
+- chave da The Odds API
 
-No diretorio `bet_agent`:
+## Instalacao
+
+Dentro de `bet_agent`:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-## 3) Configuracao das chaves
-
-No PowerShell:
-
-```powershell
-$env:API_FOOTBALL_KEY="SUA_CHAVE_API_FOOTBALL"
-$env:API_FOOTBALL_FALLBACK_KEYS="CHAVE_RESERVA_1,CHAVE_RESERVA_2"
-$env:THE_ODDS_API_KEY="SUA_CHAVE_THE_ODDS_API"
-```
-
-Ou crie `bet_agent/.env` (carregado automaticamente):
-
-```dotenv
-API_FOOTBALL_KEY=SUA_CHAVE_API_FOOTBALL
-API_FOOTBALL_FALLBACK_KEYS=CHAVE_RESERVA_1,CHAVE_RESERVA_2
-THE_ODDS_API_KEY=SUA_CHAVE_THE_ODDS_API
-```
-
-`API_FOOTBALL_FALLBACK_KEYS` e opcional. O app usa essa(s) chave(s) apenas quando a chave principal atingir limite diario de requests.
-
-Existe um modelo pronto: `.env.example`.
-
-Perfis prontos:
-
-- `.env.local.example` (ambiente local)
-- `.env.prd.example` (producao)
-
-O sistema carrega automaticamente:
-
-1. `.env`
-2. `.env.<APP_ENV>` (ex.: `.env.local` ou `.env.prd`)
-
-Variaveis do sistema (painel do provedor/cloud) sempre tem prioridade.
-
-### Modo de autenticacao da API-Football
-
-- Conta no site API-Sports (direto):
-
-```powershell
-$env:API_FOOTBALL_AUTH_MODE="apisports"
-```
-
-- Conta via RapidAPI:
-
-```powershell
-$env:API_FOOTBALL_AUTH_MODE="rapidapi"
-$env:API_FOOTBALL_HOST="v3.football.api-sports.io"
-```
-
-## 4) Variaveis opcionais
-
-- `MIN_PROBABILITY` (default `0.65`)
-- `MIN_EV` (default `0.0`)
-- `APP_ENV` (default `local`; use `prd` em producao)
-- `SERVER_HOST` (default `0.0.0.0`)
-- `SERVER_PORT` (default `8000`)
-- `REQUESTS_TRUST_ENV` (default `false`, ignora `HTTP_PROXY/HTTPS_PROXY` do sistema)
-- `USE_SAMPLE_DATA` (default `false`)
-- `PERSISTIR_EM_BANCO` (default `true`)
-- `NOME_ARQUIVO_BANCO` (default `historico_apostas.db`)
-- `DIRETORIO_BANCO` (opcional; por padrao usa `%TEMP%\\OddsEdge\\dados` no Windows)
-- `API_FOOTBALL_FREE_PLAN_MAX_SEASON` (default `2024`, fallback para plano free)
-- `API_FOOTBALL_FALLBACK_KEYS` (CSV opcional; usada somente quando `API_FOOTBALL_KEY` estourar limite diario)
-- `IDLE_SHUTDOWN_SECONDS` (default `25`)
-- `ENABLE_IDLE_SHUTDOWN` (default `true`; use `false` quando publicar na web)
-- `ODDS_ONLY_ACTIVE_SPORTS` (default `true`, consulta apenas ligas dos jogos do dia quando possivel)
-- `ODDS_DYNAMIC_TOP_N` (default `8`; com jogos em `x` ligas, usa `min(x, N)` pela prioridade configurada)
-- `ODDS_PRIORITY_SPORTS` (lista CSV de prioridade das ligas populares)
-- `ODDS_MAX_SPORTS_PER_RUN` (default `0`, sem limite; use `1`/`2`/`3` para economizar creditos)
-- `ODDS_SPORTS` (lista CSV de ligas da The Odds API)
-- `PORT` (usada automaticamente em cloud quando `SERVER_PORT` nao estiver definida)
-
-Exemplo de modo economico:
-
-```powershell
-$env:ODDS_ONLY_ACTIVE_SPORTS="true"
-$env:ODDS_MAX_SPORTS_PER_RUN="2"
-$env:ODDS_SPORTS="soccer_italy_serie_a,soccer_spain_la_liga,soccer_epl,soccer_brazil_campeonato"
-```
-
-Se quiser forcar dados de exemplo para testes:
-
-```powershell
-$env:USE_SAMPLE_DATA="true"
-```
-
-## 5) Execucao
-
-No diretorio `bet_agent`:
+Para desenvolvimento:
 
 ```bash
-python main.py
+pip install -r requirements-dev.txt
 ```
 
-Ou pela raiz do projeto:
+## Formas de executar
 
-```bat
-iniciar_bet_agent.bat
+Pela raiz do projeto:
+
+- `iniciar_bet_agent.bat`: pipeline + web local
+- `iniciar_bet_agent_prd.bat`: simulacao de producao no Windows
+- `iniciar_web_sem_api_8080.bat`: sobe apenas a interface sem consumir APIs
+
+Direto em Python:
+
+```bash
+python main.py run-all
+python main.py serve
+python main.py pipeline
 ```
 
-Para modo producao (Windows/VM):
+## Endpoints
 
-```bat
-iniciar_bet_agent_prd.bat
-```
+- `GET /`: dashboard HTML
+- `GET /bets`: payload atual com recomendacoes
+- `GET /health`: healthcheck da aplicacao
+- `POST /session/start`
+- `POST /session/heartbeat`
+- `POST /session/end`
 
-Fluxo executado:
+## Persistencia
 
-1. busca jogos do dia
-2. busca odds
-3. coleta estatisticas dos times
-4. estima probabilidades (Poisson)
-5. calcula EV
-6. filtra apostas (`probabilidade > 65%` e `EV > 0`)
-7. salva em `data/cache_matches.json`
-8. persiste historico no banco SQLite (`data/historico_apostas.db`)
-9. inicia servidor FastAPI
+Por padrao, a aplicacao grava:
 
-## 6) Interface web
+- `cache_matches.json`: estado atual da ultima execucao
+- `history/YYYY/MM/DD/<execucao_id>.json`: historico por execucao
+- `historico_apostas.db`: banco SQLite
 
-Abra:
+Se `DATA_DIR` for definido, os arquivos acima passam a ser gravados nesse diretorio de runtime.
 
-```text
-http://localhost:8000
-```
+## Documentacao completa
 
-Endpoint JSON:
-
-```text
-GET /bets
-```
-
-## 7) Observacoes
-
-- O sistema usa dados de exemplo apenas com `USE_SAMPLE_DATA=true`.
-- O historico em banco e gravado por padrao em `%TEMP%\\OddsEdge\\dados\\historico_apostas.db` no Windows.
-- Se quiser, defina `DIRETORIO_BANCO` para salvar em outro local.
-- Tabelas criadas automaticamente:
-  - `execucoes`
-  - `partidas`
-  - `odds_partidas`
-  - `apostas_recomendadas`
-- Sem chaves de API e com `USE_SAMPLE_DATA=false`, a aplicacao para com erro explicito.
-- Com chave configurada, falhas de API agora geram erro explicito (nao cai silenciosamente em jogos fake).
-- Ao fechar a ultima aba do `localhost:8000`, o servidor encerra automaticamente.
-- Se `ENABLE_IDLE_SHUTDOWN=true`, o desligamento acontece por timeout (`IDLE_SHUTDOWN_SECONDS`).
-- Em producao, use `APP_ENV=prd` e `ENABLE_IDLE_SHUTDOWN=false`.
-- Estatisticas por time usam esta estrategia:
-  1. tenta temporada atual com `last=10`
-  2. se bloqueado, tenta temporada atual sem `last`
-  3. se ainda bloqueado, tenta temporadas anteriores (mais recente liberada)
-  4. se nao houver dados liberados, usa fallback interno e marca no JSON
-- O arquivo `data/cache_matches.json` agora inclui:
-  - `total_games_with_odds`
-  - `stats_basis_by_match` (base estatistica usada por jogo)
-- A selecao de ligas segue:
-  1. detecta ligas com jogos ativos no dia
-  2. ordena pela `ODDS_PRIORITY_SPORTS`
-  3. aplica `ODDS_DYNAMIC_TOP_N` (se `x < N`, usa todas as `x`)
-- Copa do Mundo ja esta preparada na configuracao (`soccer_fifa_world_cup`), ativando automaticamente quando houver jogos/odds.
-- Mercados avaliados:
-  - Over 1.5
-  - Over 2.5
-  - Under 3.5
-  - Ambos marcam (BTTS)
-  - Dupla chance (1X, X2, 12)
+- [Indice da documentacao](docs/README.md)
+- [Guia para leigos](docs/GUIA_LEIGO.md)
+- [Arquitetura](docs/ARQUITETURA.md)
+- [Configuracao](docs/CONFIGURACAO.md)
+- [Operacao local](docs/OPERACAO_LOCAL.md)
+- [API e modos de execucao](docs/API_E_EXECUCAO.md)
+- [Banco de dados](docs/BANCO_DE_DADOS.md)
+- [Deploy em VPS](docs/DEPLOY_VPS.md)
+- [Setup GitHub](docs/GITHUB_SETUP.md)
+- [Publicar na web](docs/PUBLICAR_NA_WEB.md)

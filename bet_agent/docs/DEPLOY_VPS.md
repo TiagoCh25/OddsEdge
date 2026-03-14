@@ -22,6 +22,7 @@
 2. Clone o repositorio em `/opt/bet-agent`.
 3. Copie `bet_agent/.env.prd.example` para `bet_agent/.env.prd`.
 4. Preencha as chaves reais.
+5. Confirme que `DATA_DIR=/app/runtime` e `DIRETORIO_BANCO=/app/runtime`.
 
 ## Subida inicial
 
@@ -79,6 +80,11 @@ Esse volume guarda:
 - `cache_matches.json`
 - historico por execucao
 - banco SQLite `historico_apostas.db`
+
+## Endpoints de verificacao
+
+- `GET /health`
+- `GET /bets`
 
 ## HTTPS
 

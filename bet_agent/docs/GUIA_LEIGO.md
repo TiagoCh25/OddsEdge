@@ -1,96 +1,80 @@
-# Bet Agent - Guia Rapido Para Leigos
+# Guia Rapido Para Leigos
 
-Este guia explica o projeto sem linguagem tecnica.
-
-## 1) O que este sistema faz
+## O que este sistema faz
 
 O Bet Agent:
 
-- busca os jogos de futebol do dia
-- calcula probabilidades com modelo matematico (Poisson)
-- compara com as odds
-- calcula o EV (valor esperado)
-- mostra recomendacoes com maior chance de valor
+- busca jogos de futebol do dia
+- busca odds das casas
+- calcula probabilidades com matematica
+- calcula EV
+- mostra quais apostas parecem ter valor
 
-Em resumo: ele filtra apostas com base em estatistica, para evitar decisao no "achismo".
+Em resumo: ele tenta trocar decisao no achismo por decisao baseada em dados.
 
-## 2) O que voce precisa para funcionar
+## O que voce precisa
 
-- Python instalado (3.10+)
+- Python instalado
 - chave da API-Football
 - chave da The Odds API
 
-Sem essas chaves, o sistema nao consegue buscar dados reais.
+## Como rodar no seu PC
 
-## 3) Como rodar localmente (no seu PC)
-
-1. Entre na pasta `bet_agent`.
-2. Instale dependencias:
-
-```bash
-pip install -r requirements.txt
-```
-
-3. Crie o arquivo `.env` (na pasta `bet_agent`) com suas chaves:
-
-```dotenv
-API_FOOTBALL_KEY=SUA_CHAVE_API_FOOTBALL
-THE_ODDS_API_KEY=SUA_CHAVE_THE_ODDS_API
-```
-
-4. Na pasta raiz do projeto, execute:
+1. Copie `.env.local.example` para `.env.local`.
+2. Preencha as chaves.
+3. Na raiz do projeto, execute:
 
 ```bat
 iniciar_bet_agent.bat
 ```
 
-5. Abra no navegador:
+4. Abra:
 
 ```text
 http://localhost:8000
 ```
 
-Se quiser simular modo producao em uma VM/servidor Windows:
+## Como abrir sem gastar credito de API
+
+Use:
 
 ```bat
-iniciar_bet_agent_prd.bat
+iniciar_web_sem_api_8080.bat
 ```
 
-## 4) Entendendo a mensagem de "falha temporaria"
+Depois abra:
 
-Se aparecer aviso sobre falha de odds, normalmente e por:
+```text
+http://localhost:8080
+```
+
+## Onde os dados ficam salvos
+
+O projeto grava:
+
+- um JSON com o resultado atual
+- um historico por execucao
+- um banco SQLite com as tabelas do sistema
+
+## Quando aparece falha temporaria
+
+Normalmente isso significa:
 
 - chave invalida
-- limite de creditos da The Odds API acabou
+- limite da The Odds API atingido
 - indisponibilidade temporaria da API
 
-Quando isso acontece, o sistema mostra as ultimas recomendacoes validas do dia.
+Quando possivel, o sistema reaproveita a ultima recomendacao valida do mesmo dia.
 
-## 5) Como economizar creditos da The Odds API
+## O que e EV
 
-Use estas configuracoes no `.env`:
+EV significa valor esperado.
 
-```dotenv
-ODDS_ONLY_ACTIVE_SPORTS=true
-ODDS_MAX_SPORTS_PER_RUN=2
-ODDS_SPORTS=soccer_italy_serie_a,soccer_spain_la_liga,soccer_epl,soccer_brazil_campeonato
-```
-
-Explicando:
-
-- `ODDS_ONLY_ACTIVE_SPORTS=true`: consulta so ligas que realmente tem jogos hoje
-- `ODDS_MAX_SPORTS_PER_RUN=2`: limita quantas ligas serao consultadas por execucao
-- `ODDS_SPORTS=...`: define ligas permitidas
-
-Quanto menor o limite, menor o consumo de creditos.
-
-## 6) O que significa EV
-
-EV (Expected Value) e uma conta simples:
+Formula:
 
 ```text
 EV = (probabilidade x odd) - 1
 ```
 
 - EV maior que 0: aposta com valor esperado positivo
-- EV menor que 0: tende a nao compensar no longo prazo
+- EV menor que 0: tende a ser ruim no longo prazo

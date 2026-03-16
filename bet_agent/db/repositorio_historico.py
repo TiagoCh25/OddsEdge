@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import sqlite3
 import unicodedata
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List
@@ -22,6 +22,7 @@ class DadosPersistenciaExecucao:
     odds_por_partida: Dict[str, Dict[str, float]]
     apostas_recomendadas: List[Dict[str, object]]
     stats_basis_por_partida: List[Dict[str, object]]
+    erros_processamento: List[Dict[str, object]] = field(default_factory=list)
 
 
 class RepositorioHistoricoSQLite:
@@ -142,6 +143,21 @@ class RepositorioHistoricoSQLite:
                     placar_final TEXT,
                     criado_em TEXT NOT NULL,
                     UNIQUE(execucao_id, fixture_id, tipo_aposta)
+                );
+
+                CREATE TABLE IF NOT EXISTS erros_processamento (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    execucao_id TEXT NOT NULL,
+                    fixture_id INTEGER,
+                    jogo TEXT,
+                    liga TEXT,
+                    time_nome TEXT,
+                    time_id INTEGER,
+                    lado_time TEXT,
+                    etapa TEXT,
+                    mensagem_erro TEXT NOT NULL,
+                    detalhe_json TEXT,
+                    criado_em TEXT NOT NULL
                 );
                 """
             )
@@ -510,6 +526,44 @@ class RepositorioHistoricoSQLite:
                             json.dumps(aposta.get("stats_basis", {}), ensure_ascii=False),
                             resultado_aposta,
                             placar_final,
+                            agora,
+                        ),
+                    )
+
+                for erro in dados.erros_processamento:
+                    if not isinstance(erro, dict):
+                        continue
+                    fixture_id_raw = erro.get("fixture_id")
+                    fixture_id = int(fixture_id_raw) if fixture_id_raw is not None else None
+                    time_id_raw = erro.get("time_id")
+                    time_id = int(time_id_raw) if time_id_raw is not None else None
+                    conn.execute(
+                        """
+                        INSERT INTO erros_processamento (
+                            execucao_id,
+                            fixture_id,
+                            jogo,
+                            liga,
+                            time_nome,
+                            time_id,
+                            lado_time,
+                            etapa,
+                            mensagem_erro,
+                            detalhe_json,
+                            criado_em
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        """,
+                        (
+                            dados.execucao_id,
+                            fixture_id,
+                            str(erro.get("jogo") or ""),
+                            str(erro.get("liga") or ""),
+                            str(erro.get("time_nome") or ""),
+                            time_id,
+                            str(erro.get("lado_time") or ""),
+                            str(erro.get("etapa") or ""),
+                            str(erro.get("mensagem_erro") or ""),
+                            json.dumps(erro, ensure_ascii=False),
                             agora,
                         ),
                     )

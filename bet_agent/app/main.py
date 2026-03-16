@@ -17,7 +17,7 @@ from db.repositorio_historico import (
 )
 from models.poisson_model import PoissonModel
 from services.bet_evaluator import BetEvaluator
-from services.probability_service import ProbabilityService
+from services.probability_service import ProbabilityService, TeamStatsUnavailableError
 
 
 def _data_source() -> str:
@@ -143,6 +143,48 @@ def _enrich_recommendations_with_match_metadata(
     return enriched
 
 
+def _append_warning_message(payload: Dict[str, object], message: str) -> None:
+    current = str(payload.get("warning_message") or "").strip()
+    if not current:
+        payload["warning_message"] = message
+        return
+    if message in current:
+        return
+    payload["warning_message"] = f"{current} {message}"
+
+
+def _attach_best_bookmakers(
+    bets: List[Dict[str, object]],
+    *,
+    odds_api: OddsAPI,
+    match_key: str,
+) -> None:
+    for bet in bets:
+        market_key = str(bet.get("mercado_chave") or "").strip()
+        bet["best_bookmakers"] = odds_api.get_best_bookmakers_for_match(match_key, market_key)
+
+
+def _build_match_processing_error(match: Dict[str, object], exc: Exception) -> Dict[str, object]:
+    base_error = {
+        "fixture_id": match.get("fixture_id"),
+        "jogo": f"{match.get('home_team')} vs {match.get('away_team')}",
+        "liga": match.get("league"),
+        "time_nome": "",
+        "time_id": None,
+        "lado_time": "",
+        "etapa": "processamento_partida",
+        "mensagem_erro": str(exc),
+    }
+
+    if isinstance(exc, TeamStatsUnavailableError):
+        base_error["time_nome"] = exc.team_name
+        base_error["time_id"] = exc.team_id
+        base_error["lado_time"] = exc.side
+        base_error["etapa"] = "estatisticas_time"
+
+    return base_error
+
+
 def run_daily_pipeline() -> Dict[str, object]:
     football_api = FootballAPI()
     odds_api = OddsAPI()
@@ -156,6 +198,7 @@ def run_daily_pipeline() -> Dict[str, object]:
     matches: List[Dict[str, object]] = []
     odds_by_match: Dict[str, Dict[str, float]] = {}
     recommendations: List[Dict[str, object]] = []
+    processing_errors: List[Dict[str, object]] = []
     today = datetime.now().date()
     cached_today_recommendations: List[Dict[str, object]] = []
 
@@ -167,6 +210,8 @@ def run_daily_pipeline() -> Dict[str, object]:
             cached_today_recommendations,
             matches,
         )
+        if matches:
+            odds_api.ensure_service_available()
         odds_by_match = odds_api.get_odds_for_matches(matches)
 
         recommendations = []
@@ -178,21 +223,26 @@ def run_daily_pipeline() -> Dict[str, object]:
                 continue
 
             total_games_with_odds += 1
-            probability_output = probability_service.estimate_match_probabilities(match)
-            probabilities = probability_output["probabilities"]
-            stats_basis = probability_output.get("stats_basis", {})
-            stats_basis_by_match.append(
-                {
-                    "fixture_id": match.get("fixture_id"),
-                    "jogo": f"{match.get('home_team')} vs {match.get('away_team')}",
-                    "liga": match.get("league"),
-                    "stats_basis": stats_basis,
-                }
-            )
-            match_recommendations = evaluator.evaluate_match(match, probabilities, odds)
-            for bet in match_recommendations:
-                bet["stats_basis"] = stats_basis
-            recommendations.extend(match_recommendations)
+            try:
+                probability_output = probability_service.estimate_match_probabilities(match)
+                probabilities = probability_output["probabilities"]
+                stats_basis = probability_output.get("stats_basis", {})
+                stats_basis_by_match.append(
+                    {
+                        "fixture_id": match.get("fixture_id"),
+                        "jogo": f"{match.get('home_team')} vs {match.get('away_team')}",
+                        "liga": match.get("league"),
+                        "stats_basis": stats_basis,
+                    }
+                )
+                match_recommendations = evaluator.evaluate_match(match, probabilities, odds)
+                _attach_best_bookmakers(match_recommendations, odds_api=odds_api, match_key=match_key)
+                for bet in match_recommendations:
+                    bet["stats_basis"] = stats_basis
+                recommendations.extend(match_recommendations)
+            except Exception as exc:
+                processing_errors.append(_build_match_processing_error(match, exc))
+                continue
 
         recommendations = _enrich_recommendations_with_match_metadata(recommendations, matches)
         if not recommendations and cached_today_recommendations:
@@ -227,6 +277,8 @@ def run_daily_pipeline() -> Dict[str, object]:
     payload["total_games_analyzed"] = total_games_analyzed
     payload["total_games_with_odds"] = total_games_with_odds
     payload["stats_basis_by_match"] = stats_basis_by_match
+    payload["processing_errors"] = processing_errors
+    payload["skipped_matches_count"] = len(processing_errors)
     payload["execucao_id"] = execucao_id
     _write_payload(payload)
     _write_history_snapshot(payload, execucao_id=execucao_id, reference_date=today)
@@ -245,6 +297,7 @@ def run_daily_pipeline() -> Dict[str, object]:
                     odds_por_partida=odds_by_match,
                     apostas_recomendadas=payload.get("bets", []) if isinstance(payload.get("bets"), list) else [],
                     stats_basis_por_partida=stats_basis_by_match,
+                    erros_processamento=processing_errors,
                 )
             )
         except Exception as exc:

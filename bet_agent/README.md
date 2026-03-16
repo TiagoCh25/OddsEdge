@@ -7,14 +7,19 @@ Guia principal da aplicacao.
 O Bet Agent faz este fluxo:
 
 1. busca jogos de futebol do dia
-2. busca odds por liga
-3. coleta estatisticas recentes dos times
+2. valida a disponibilidade da The Odds API antes das consultas pesadas
+3. busca odds por liga
 4. calcula probabilidades com modelo de Poisson
 5. calcula EV por mercado
 6. filtra apostas recomendadas
 7. salva cache atual em JSON
 8. salva historico em SQLite
 9. sobe a interface web em FastAPI
+
+Se a API-Football falhar, o pipeline para antes de consultar odds. Se a The Odds API falhar no pre-check, o sistema interrompe a execucao antes de consumir chamadas extras de estatisticas dos times.
+Se um jogo especifico falhar ao montar estatisticas, ele e ignorado, o erro fica registrado e o restante da execucao continua normalmente.
+O dashboard destaca placares ao vivo no proprio nome do confronto e mostra, em cada aposta, as 3 melhores casas por odd dentre as operadoras relevantes priorizadas no projeto.
+O dashboard do cliente nao expoe botao de compartilhamento.
 
 ## Requisitos
 
@@ -56,10 +61,17 @@ python main.py pipeline
 
 - `GET /`: dashboard HTML
 - `GET /bets`: payload atual com recomendacoes
-- `GET /health`: healthcheck da aplicacao
+- `GET /health`: healthcheck da aplicacao e das APIs externas
 - `POST /session/start`
 - `POST /session/heartbeat`
 - `POST /session/end`
+
+No payload de cada aposta, quando disponivel:
+
+- `best_bookmakers`: lista das ate 3 melhores casas por odd do mercado, com link para a homepage quando houver mapeamento
+- `best_bookmakers[].logo_url`: favicon/logo leve da casa quando houver mapeamento
+
+Por padrao, o projeto considera a lista de casas relevantes definida no projeto e, quando pelo menos uma delas aparece na resposta, prioriza esse grupo na exibicao e na selecao das melhores odds.
 
 ## Persistencia
 

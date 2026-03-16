@@ -9,24 +9,44 @@ from app.config import settings
 from models.poisson_model import PoissonModel
 
 
+class TeamStatsUnavailableError(RuntimeError):
+    def __init__(self, *, team_id: int, team_name: str, side: str, message: str) -> None:
+        super().__init__(message)
+        self.team_id = team_id
+        self.team_name = team_name
+        self.side = side
+
+
 class ProbabilityService:
     def __init__(self, football_api: FootballAPI, poisson_model: PoissonModel) -> None:
         self.football_api = football_api
         self.poisson_model = poisson_model
 
+    def _load_team_stats(self, match: Dict[str, object], side: str) -> Dict[str, object]:
+        team_id = int(match[f"{side}_team_id"])
+        team_name = str(match.get(f"{side}_team") or team_id)
+        try:
+            return self.football_api.get_team_recent_stats(
+                team_id=team_id,
+                league_id=int(match["league_id"]),
+                season=int(match["season"]),
+            )
+        except Exception as exc:
+            raise TeamStatsUnavailableError(
+                team_id=team_id,
+                team_name=team_name,
+                side=side,
+                message=(
+                    f"Falha ao buscar estatisticas do time {team_name} "
+                    f"(id {team_id}) na API-Football. Detalhes: {exc}"
+                ),
+            ) from exc
+
     def estimate_match_probabilities(self, match: Dict[str, object]) -> Dict[str, object]:
         league_goal_avg = settings.league_goal_avg
 
-        home_stats = self.football_api.get_team_recent_stats(
-            team_id=int(match["home_team_id"]),
-            league_id=int(match["league_id"]),
-            season=int(match["season"]),
-        )
-        away_stats = self.football_api.get_team_recent_stats(
-            team_id=int(match["away_team_id"]),
-            league_id=int(match["league_id"]),
-            season=int(match["season"]),
-        )
+        home_stats = self._load_team_stats(match, "home")
+        away_stats = self._load_team_stats(match, "away")
 
         home_attack_strength = max(
             home_stats["avg_goals_for"] / league_goal_avg, 0.2)

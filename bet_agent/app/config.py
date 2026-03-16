@@ -186,6 +186,38 @@ DEFAULT_ODDS_PRIORITY_SPORTS: List[str] = [
     "soccer_germany_bundesliga_women",
 ]
 
+DEFAULT_ODDS_PREFERRED_BOOKMAKERS: List[str] = [
+    "pinnacle",
+    "bet365_au",
+    "betfair_ex_eu",
+    "betfair_sb_uk",
+    "betway",
+    "onexbet",
+]
+
+DEFAULT_ODDS_RELEVANT_BOOKMAKERS: List[str] = [
+    "pinnacle",
+    "bet365",
+    "betfair",
+    "betano",
+    "sportingbet",
+    "betway",
+    "novibet",
+    "1xbet",
+    "onexbet",
+    "parimatch",
+    "kto",
+    "pixbet",
+    "estrelabet",
+    "betnacional",
+    "aposta ganha",
+    "apostaganha",
+    "bodog",
+    "galera.bet",
+    "galerabet",
+    "esportivabet",
+]
+
 
 def _parse_csv_env(name: str, fallback: List[str]) -> List[str]:
     raw = os.getenv(name, "")
@@ -274,6 +306,10 @@ class Settings:
         default_factory=lambda: _parse_csv_env("ODDS_PRIORITY_SPORTS", DEFAULT_ODDS_PRIORITY_SPORTS))
     odds_max_sports_per_run: int = int(
         os.getenv("ODDS_MAX_SPORTS_PER_RUN", "0"))
+    odds_preferred_bookmakers: List[str] = field(
+        default_factory=lambda: _parse_csv_env("ODDS_PREFERRED_BOOKMAKERS", DEFAULT_ODDS_PREFERRED_BOOKMAKERS))
+    odds_relevant_bookmakers: List[str] = field(
+        default_factory=lambda: _parse_csv_env("ODDS_RELEVANT_BOOKMAKERS", DEFAULT_ODDS_RELEVANT_BOOKMAKERS))
 
     timezone: str = os.getenv("APP_TIMEZONE", "America/Sao_Paulo")
     league_goal_avg: float = float(os.getenv("LEAGUE_GOAL_AVG", "1.35"))
@@ -290,6 +326,7 @@ class Settings:
     idle_shutdown_seconds: int = int(os.getenv("IDLE_SHUTDOWN_SECONDS", "25"))
     enable_idle_shutdown: bool = _parse_bool_env(
         "ENABLE_IDLE_SHUTDOWN", not _is_production_env())
+    health_api_cache_seconds: int = int(os.getenv("HEALTH_API_CACHE_SECONDS", "300"))
     server_host: str = os.getenv("SERVER_HOST", "0.0.0.0")
     server_port: int = int(os.getenv("SERVER_PORT")
                            or os.getenv("PORT", "8000"))

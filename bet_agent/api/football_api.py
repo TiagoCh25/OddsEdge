@@ -80,6 +80,30 @@ class FootballAPI:
 
         raise RuntimeError(last_error or "Falha ao consultar API-Football.")
 
+    def ensure_service_available(self) -> Dict[str, object]:
+        if settings.use_sample_data:
+            return {"status": "sample", "checked_endpoint": None}
+        if not settings.api_football_keys:
+            raise RuntimeError(
+                "API_FOOTBALL_KEY nao configurada. "
+                "Defina API_FOOTBALL_KEY ou use USE_SAMPLE_DATA=true."
+            )
+
+        try:
+            self._request(
+                "/fixtures",
+                {"date": date.today().isoformat(), "timezone": settings.timezone},
+            )
+        except ProxyError as exc:
+            raise RuntimeError(
+                "API-Football indisponivel por proxy. "
+                "Defina REQUESTS_TRUST_ENV=false ou corrija HTTP_PROXY/HTTPS_PROXY."
+            ) from exc
+        except Exception as exc:
+            raise RuntimeError(f"API-Football indisponivel no pre-check. Detalhes: {exc}") from exc
+
+        return {"status": "ok", "checked_endpoint": "/fixtures"}
+
     @staticmethod
     def _extract_status_and_score(fixture: Dict[str, object]) -> Dict[str, object]:
         status_info = fixture.get("fixture", {}).get("status", {})
@@ -419,10 +443,10 @@ class FootballAPI:
                 "away_team_id": 867,
                 "away_team": "Lecce",
                 "away_team_logo": "",
-                "status_short": "NS",
-                "status_jogo": "Not Started",
-                "home_goals": None,
-                "away_goals": None,
+                "status_short": "1H",
+                "status_jogo": "First Half",
+                "home_goals": 1,
+                "away_goals": 0,
             },
             {
                 "fixture_id": 900002,
@@ -438,10 +462,10 @@ class FootballAPI:
                 "away_team_id": 546,
                 "away_team": "Getafe",
                 "away_team_logo": "",
-                "status_short": "NS",
-                "status_jogo": "Not Started",
-                "home_goals": None,
-                "away_goals": None,
+                "status_short": "FT",
+                "status_jogo": "Match Finished",
+                "home_goals": 2,
+                "away_goals": 1,
             },
         ]
 

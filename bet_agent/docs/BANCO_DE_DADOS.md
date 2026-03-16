@@ -125,6 +125,25 @@ Restricao:
 
 - `UNIQUE(execucao_id, fixture_id, tipo_aposta)`
 
+### `erros_processamento`
+
+Armazena erros por partida sem derrubar a execucao inteira.
+
+| Coluna | Tipo | Descricao |
+|---|---|---|
+| `id` | INTEGER | PK autoincremento |
+| `execucao_id` | TEXT | referencia logica da execucao |
+| `fixture_id` | INTEGER | id do jogo, quando conhecido |
+| `jogo` | TEXT | confronto em texto |
+| `liga` | TEXT | nome da liga |
+| `time_nome` | TEXT | time associado ao erro, quando identificado |
+| `time_id` | INTEGER | id do time associado ao erro |
+| `lado_time` | TEXT | `home` ou `away`, quando conhecido |
+| `etapa` | TEXT | etapa do pipeline em que o erro ocorreu |
+| `mensagem_erro` | TEXT | mensagem amigavel do erro |
+| `detalhe_json` | TEXT | snapshot completo do erro persistido |
+| `criado_em` | TEXT | timestamp de persistencia |
+
 ## Mercados suportados
 
 - `over_0_5`
@@ -201,4 +220,13 @@ SELECT
 FROM apostas_recomendadas
 WHERE resultado_aposta IN ('ganhou', 'perdeu')
 GROUP BY resultado_aposta;
+```
+
+### Erros mais recentes por partida
+
+```sql
+SELECT jogo, liga, time_nome, etapa, mensagem_erro, criado_em
+FROM erros_processamento
+ORDER BY id DESC
+LIMIT 20;
 ```

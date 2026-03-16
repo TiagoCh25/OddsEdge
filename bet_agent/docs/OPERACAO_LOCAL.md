@@ -46,6 +46,22 @@ Esse script:
 - sobe apenas a interface
 - usa porta `8080`
 
+### Preview com dados sample
+
+Para visualizar dashboard, placar e melhores casas sem consumir APIs reais:
+
+```bash
+cd bet_agent
+set USE_SAMPLE_DATA=true
+python -B main.py run-all
+```
+
+Esse modo:
+
+- gera dados ficticios
+- monta apostas com placar e casas simuladas alinhadas ao grupo preferencial de bookmakers
+- permite validar a interface local sem gasto de quota
+
 ## Acesso local
 
 - modo normal: `http://localhost:8000`

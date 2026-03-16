@@ -14,7 +14,6 @@
   let activeBetTypeFilter = "all";
 
   const STALE_POLL_INTERVAL_MS = 5000;
-  const SHARE_BUTTON_HTML = '<span class="share-icon" aria-hidden="true">↗</span> Compartilhar';
 
   const elements = {
     metricGames: document.getElementById("metric-games"),
@@ -175,6 +174,11 @@
     return `${homeGoals} x ${awayGoals}`;
   }
 
+  function scoreLabel(value) {
+    const goal = parseGoal(value);
+    return goal === null ? "-" : String(goal);
+  }
+
   function resolveMarketResult(bet, homeGoals, awayGoals) {
     const market = normalizeText(bet?.tipo_aposta || "");
     const total = homeGoals + awayGoals;
@@ -210,6 +214,15 @@
   }
 
   function getResultInfo(bet, statusInfo) {
+    if (statusInfo.key === "live") {
+      const score = formatFinalScore(bet);
+      return {
+        dotClass: "dot-live",
+        label: score !== "-" ? "Placar ao vivo" : "Jogo ao vivo",
+        score,
+      };
+    }
+
     if (statusInfo.key !== "finished") {
       return { dotClass: "dot-gray", label: "Aguardando resultado", score: "-" };
     }
@@ -228,6 +241,34 @@
       return { dotClass: "dot-red", label: "Deu ruim", score: formatFinalScore(bet) };
     }
     return { dotClass: "dot-gray", label: "Sem avaliação", score: formatFinalScore(bet) };
+  }
+
+  function renderMatchMainLine(bet, statusInfo) {
+    const teams = getMatchTeams(bet);
+    const homeScore = scoreLabel(bet?.home_goals);
+    const awayScore = scoreLabel(bet?.away_goals);
+    const showScore = statusInfo.key === "live" || statusInfo.key === "finished";
+    const scoreMarkup = showScore
+      ? `
+        <span class="score-chip">${escapeHtml(homeScore)}</span>
+        <span class="vs-chip">vs</span>
+        <span class="score-chip">${escapeHtml(awayScore)}</span>
+      `
+      : '<span class="vs-chip">vs</span>';
+
+    return `
+      <div class="match-main-line">
+        <span class="team-wrap team-wrap-home">
+          ${renderTeamLogo(teams.home, bet?.home_team_logo)}
+          <span class="team-name" title="${escapeHtml(teams.home)}">${escapeHtml(teams.home)}</span>
+        </span>
+        ${scoreMarkup}
+        <span class="team-wrap team-wrap-away">
+          <span class="team-name" title="${escapeHtml(teams.away)}">${escapeHtml(teams.away)}</span>
+          ${renderTeamLogo(teams.away, bet?.away_team_logo)}
+        </span>
+      </div>
+    `;
   }
 
   function normalizeLeague(value) {
@@ -283,6 +324,61 @@
     if (pct >= 70) {
       return '<span class="prob-badge prob-badge-mid">Boa</span>';
     }
+    return "";
+  }
+
+  function getBestBookmakers(bet) {
+    if (!Array.isArray(bet?.best_bookmakers)) return [];
+    return bet.best_bookmakers
+      .filter((item) => item && String(item.name || "").trim())
+      .slice(0, 3);
+  }
+
+  function renderBestBookmakers(bet) {
+    const houses = getBestBookmakers(bet);
+    if (!houses.length) {
+      return '<div class="bookmakers-column"><span class="bookmakers-empty">Sem casas destacadas</span></div>';
+    }
+
+    const labels = houses
+      .map((item) => {
+        const name = escapeHtml(String(item.name || ""));
+        const odd = toNumber(item.odd, 0);
+        const label = odd > 0 ? odd.toFixed(2) : "-";
+        const url = String(item.url || "").trim();
+        const logoUrl = safeLogoUrl(item.logo_url);
+        const initials = escapeHtml(getInitials(item.name || ""));
+        const content = `
+          <span class="bookmaker-brand">
+            ${
+              logoUrl
+                ? `
+                  <img
+                    class="bookmaker-logo"
+                    src="${logoUrl}"
+                    alt="${name}"
+                    loading="lazy"
+                    referrerpolicy="no-referrer"
+                    onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';"
+                  />
+                  <span class="bookmaker-logo bookmaker-logo-fallback" style="display:none;" aria-hidden="true">${initials}</span>
+                `
+                : `<span class="bookmaker-logo bookmaker-logo-fallback" aria-hidden="true">${initials}</span>`
+            }
+            <span class="bookmaker-name">${name}</span>
+          </span>
+          <span class="bookmaker-odd">${escapeHtml(label)}</span>
+        `;
+        if (/^https?:\/\//i.test(url)) {
+          return `<a class="bookmaker-chip bookmaker-link" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${content}</a>`;
+        }
+        return `<span class="bookmaker-chip">${content}</span>`;
+      })
+      .join("");
+    return `<div class="bookmakers-column">${labels}</div>`;
+  }
+
+  function renderMarketMeta(bet) {
     return "";
   }
 
@@ -543,7 +639,7 @@
     currentRenderedBets = filtered;
 
     if (!filtered.length) {
-      tbody.innerHTML = '<tr><td class="empty-state-cell" colspan="7">Nenhuma aposta para o filtro selecionado.</td></tr>';
+      tbody.innerHTML = '<tr><td class="empty-state-cell" colspan="6">Nenhuma aposta para o filtro selecionado.</td></tr>';
       return;
     }
 
@@ -552,36 +648,24 @@
       const league = normalizeLeague(bet?.liga) || "-";
       const market = toFriendlyBetTypeLabel(bet?.tipo_aposta || "-");
       const probability = Math.max(0, Math.min(100, toNumber(bet?.probability) * 100));
-      const odd = toNumber(bet?.odd, 0).toFixed(2);
       const ev = toNumber(bet?.ev, 0);
       const evClass = evClassName(ev);
       const borderClass = evBorderClass(ev);
       const status = getStatusInfo(bet);
       const kickoff = formatKickoff(bet?.kickoff);
       const resultInfo = getResultInfo(bet, status);
-      const resultSuffix = resultInfo.score !== "-" ? ` (${resultInfo.score})` : "";
+      const statusDotClass = resultInfo.dotClass || "dot-gray";
 
       return `
-        <tr class="bet-row ${borderClass}" data-rec-index="${index}">
+        <tr class="bet-row bet-row-${status.key} ${borderClass}" data-rec-index="${index}">
           <td class="match-cell">
-            <div class="match-main-line">
-              <span class="team-wrap">
-                ${renderTeamLogo(teams.home, bet?.home_team_logo)}
-                <span class="team-name">${escapeHtml(teams.home)}</span>
-              </span>
-              <span class="vs-chip">vs</span>
-              <span class="team-wrap">
-                ${renderTeamLogo(teams.away, bet?.away_team_logo)}
-                <span class="team-name">${escapeHtml(teams.away)}</span>
-              </span>
-            </div>
+            ${renderMatchMainLine(bet, status)}
             <div class="kickoff-line">
               <span>${escapeHtml(kickoff)}</span>
-              <span class="status-pill ${status.css}">${escapeHtml(status.label)}</span>
-            </div>
-            <div class="result-line">
-              <span class="result-dot ${resultInfo.dotClass}"></span>
-              <span>${escapeHtml(resultInfo.label + resultSuffix)}</span>
+              <span class="status-inline">
+                <span class="result-dot ${statusDotClass}"></span>
+                <span class="status-pill ${status.css}">${escapeHtml(status.label)}</span>
+              </span>
             </div>
           </td>
 
@@ -593,7 +677,10 @@
           </td>
 
           <td>
-            <span class="market-pill">${escapeHtml(market)}</span>
+            <div class="market-stack">
+              <span class="market-pill">${escapeHtml(market)}</span>
+              ${renderMarketMeta(bet)}
+            </div>
           </td>
 
           <td class="prob-cell">
@@ -603,13 +690,14 @@
             </div>
             <div class="prob-track"><div class="prob-fill" style="width:${probability.toFixed(1)}%"></div></div>
           </td>
+          <td>
+            <div class="ev-stack">
+              <span class="ev-pill ${evClass}">${escapeHtml(evDisplay(ev))}</span>
+            </div>
+          </td>
 
-          <td><span class="odd-value">${escapeHtml(odd)}</span></td>
-
-          <td><span class="ev-pill ${evClass}">${escapeHtml(evDisplay(ev))}</span></td>
-
-          <td class="table-share-cell">
-            <button type="button" class="share-btn" data-rec-index="${index}">${SHARE_BUTTON_HTML}</button>
+          <td class="houses-cell">
+            ${renderBestBookmakers(bet)}
           </td>
         </tr>
       `;
@@ -656,77 +744,6 @@
     }
   }
 
-  function downloadBlob(filename, blob) {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  }
-
-  function slugify(value) {
-    return String(value || "aposta")
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^a-zA-Z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "")
-      .toLowerCase();
-  }
-
-  async function shareRecommendationByIndex(index) {
-    const bet = currentRenderedBets[index];
-    const rowElement = elements.betsTableBody?.querySelector(`tr[data-rec-index="${index}"]`);
-    if (!bet || !(rowElement instanceof HTMLElement)) return;
-
-    const shareButton = rowElement.querySelector('.share-btn[data-rec-index="' + index + '"]');
-    if (shareButton instanceof HTMLButtonElement) {
-      shareButton.disabled = true;
-      shareButton.textContent = "Preparando...";
-    }
-
-    try {
-      if (!window.html2canvas) {
-        throw new Error("html2canvas não disponível");
-      }
-      const canvas = await window.html2canvas(rowElement, {
-        scale: 2,
-        backgroundColor: null,
-        useCORS: true,
-      });
-
-      const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png", 1));
-      if (!blob) throw new Error("Falha ao gerar imagem");
-
-      const teams = getMatchTeams(bet);
-      const fileName = `oddsedge-${slugify(teams.home)}-vs-${slugify(teams.away)}.png`;
-      downloadBlob(fileName, blob);
-      setStatusMessage("Imagem da aposta gerada com sucesso.", "info");
-    } catch (error) {
-      console.error(error);
-      setStatusMessage("Não foi possível compartilhar esta aposta.", "error");
-    } finally {
-      if (shareButton instanceof HTMLButtonElement) {
-        shareButton.disabled = false;
-        shareButton.innerHTML = SHARE_BUTTON_HTML;
-      }
-    }
-  }
-
-  function initCardActions() {
-    elements.betsTableBody?.addEventListener("click", (event) => {
-      const target = event.target;
-      if (!(target instanceof HTMLElement)) return;
-      const shareBtn = target.closest(".share-btn");
-      if (!(shareBtn instanceof HTMLElement)) return;
-      const index = Number(shareBtn.dataset.recIndex);
-      if (!Number.isFinite(index)) return;
-      shareRecommendationByIndex(index);
-    });
-  }
-
   function stopStalePolling() {
     if (stalePollTimer) {
       clearInterval(stalePollTimer);
@@ -759,6 +776,7 @@
       const hasError = Boolean(payload?.error_message) || String(payload?.status || "").toLowerCase() === "error";
       const isFresh = isPayloadFromToday(payload);
       const warningMessage = String(payload?.warning_message || "").trim();
+      const skippedMatchesCount = toNumber(payload?.skipped_matches_count, 0);
 
       cachedBets = Array.isArray(payload?.bets) ? payload.bets : [];
 
@@ -770,7 +788,7 @@
         setStatusMessage(String(payload?.error_message || "Falha ao carregar dados."), "error");
       } else if (!isFresh) {
         setStatusMessage(`Atualizando dados de hoje... cache atual gerado em ${formatDateTime(payload?.generated_at)}.`, "info");
-      } else if (warningMessage) {
+      } else if (warningMessage && skippedMatchesCount <= 0) {
         setStatusMessage(warningMessage, "info");
       } else {
         setStatusMessage("");
@@ -816,7 +834,6 @@
 
   async function bootstrap() {
     initFilters();
-    initCardActions();
 
     window.addEventListener("pagehide", endBrowserSession);
     window.addEventListener("beforeunload", endBrowserSession);

@@ -45,6 +45,7 @@ Arquivos modelo:
 - `SKIP_PIPELINE_ON_START`: sobe apenas a web
 - `ENABLE_IDLE_SHUTDOWN`: desliga automatico ao ficar sem sessoes
 - `IDLE_SHUTDOWN_SECONDS`: timeout do desligamento local
+- `HEALTH_API_CACHE_SECONDS`: cache do `/health` para checagem das APIs externas
 
 ### API-Football
 
@@ -66,6 +67,8 @@ Arquivos modelo:
 - `ODDS_DYNAMIC_TOP_N`
 - `ODDS_PRIORITY_SPORTS`
 - `ODDS_MAX_SPORTS_PER_RUN`
+- `ODDS_PREFERRED_BOOKMAKERS`: lista de bookmakers preferenciais suportados pela fonte atual
+- `ODDS_RELEVANT_BOOKMAKERS`: lista completa de casas relevantes priorizadas na selecao exibida ao usuario
 
 ### Regras de recomendacao
 
@@ -85,6 +88,8 @@ THE_ODDS_API_KEY=...
 SERVER_PORT=8000
 ENABLE_IDLE_SHUTDOWN=true
 ODDS_MAX_SPORTS_PER_RUN=2
+ODDS_PREFERRED_BOOKMAKERS=pinnacle,betfair_ex_eu,betfair_sb_uk,betway,onexbet
+ODDS_RELEVANT_BOOKMAKERS=pinnacle,bet365,betfair,betano,sportingbet,betway,novibet,1xbet,parimatch,kto,pixbet,estrelabet,betnacional,aposta ganha,bodog,galera.bet,esportivabet
 ```
 
 ### Ambiente de producao

@@ -60,12 +60,26 @@ def test_repository_persists_execution(tmp_path):
                 }
             ],
             stats_basis_por_partida=[{"fixture_id": 123, "stats_basis": {"label": "sample"}}],
+            erros_processamento=[
+                {
+                    "fixture_id": 123,
+                    "jogo": "Inter vs Milan",
+                    "liga": "Serie A",
+                    "time_nome": "Inter",
+                    "time_id": 1,
+                    "lado_time": "home",
+                    "etapa": "estatisticas_time",
+                    "mensagem_erro": "Falha ao buscar estatisticas do time Inter (id 1).",
+                }
+            ],
         )
     )
 
     with sqlite3.connect(db_path) as connection:
         execution_count = connection.execute("SELECT COUNT(*) FROM execucoes").fetchone()[0]
         recommended_count = connection.execute("SELECT COUNT(*) FROM apostas_recomendadas").fetchone()[0]
+        error_count = connection.execute("SELECT COUNT(*) FROM erros_processamento").fetchone()[0]
 
     assert execution_count == 1
     assert recommended_count == 1
+    assert error_count == 1

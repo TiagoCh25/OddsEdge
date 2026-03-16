@@ -18,6 +18,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from api.football_api import FootballAPI
+from api.odds_api import OddsAPI
 from app.config import settings
 from db.repositorio_historico import RepositorioHistoricoSQLite
 
@@ -34,6 +35,8 @@ def _build_ui_version() -> str:
 
 
 UI_VERSION = _build_ui_version()
+_API_HEALTH_CACHE: Dict[str, Any] = {"checked_at": 0.0, "value": None}
+_API_HEALTH_LOCK = threading.Lock()
 
 base_dir = Path(__file__).resolve().parents[1]
 templates = Jinja2Templates(directory=str(base_dir / "web" / "templates"))
@@ -295,6 +298,66 @@ def load_payload() -> Dict[str, Any]:
         return payload
 
 
+def _probe_api_health() -> Dict[str, Any]:
+    dependencies: Dict[str, Any] = {}
+    overall_status = "ok"
+
+    try:
+        football_meta = FootballAPI().ensure_service_available()
+        dependencies["api_football"] = {
+            "status": str(football_meta.get("status", "ok")),
+            "detail": "API-Football acessivel.",
+        }
+    except Exception as exc:
+        overall_status = "degraded"
+        dependencies["api_football"] = {
+            "status": "error",
+            "detail": str(exc),
+        }
+
+    try:
+        available_sports = OddsAPI().ensure_service_available()
+        dependencies["the_odds_api"] = {
+            "status": "sample" if settings.use_sample_data else "ok",
+            "detail": (
+                "Modo sample ativo; sem consumo da The Odds API."
+                if settings.use_sample_data
+                else "The Odds API acessivel."
+            ),
+            "available_sports_count": len(available_sports),
+        }
+    except Exception as exc:
+        overall_status = "degraded"
+        dependencies["the_odds_api"] = {
+            "status": "error",
+            "detail": str(exc),
+            "available_sports_count": 0,
+        }
+
+    return {
+        "status": overall_status,
+        "checked_at": datetime.now().isoformat(),
+        "cache_seconds": settings.health_api_cache_seconds,
+        "dependencies": dependencies,
+    }
+
+
+def _get_cached_api_health() -> Dict[str, Any]:
+    now = time.time()
+    ttl = max(0, int(settings.health_api_cache_seconds))
+
+    with _API_HEALTH_LOCK:
+        cached_value = _API_HEALTH_CACHE.get("value")
+        cached_at = float(_API_HEALTH_CACHE.get("checked_at", 0.0) or 0.0)
+        if cached_value is not None and ttl > 0 and (now - cached_at) < ttl:
+            return dict(cached_value)
+
+        snapshot = _probe_api_health()
+        _API_HEALTH_CACHE["checked_at"] = now
+        _API_HEALTH_CACHE["value"] = dict(snapshot)
+        return snapshot
+
+
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request) -> Any:
     response = templates.TemplateResponse(
@@ -313,12 +376,14 @@ def bets(response: Response) -> Dict[str, Any]:
 
 @app.get("/health")
 def health() -> Dict[str, Any]:
+    api_health = _get_cached_api_health()
     return {
-        "status": "ok",
+        "status": api_health["status"],
         "app_env": settings.app_env,
         "data_file": str(settings.data_file),
         "data_file_exists": settings.data_file.exists(),
         "ui_version": UI_VERSION,
+        "api_health": api_health,
     }
 
 

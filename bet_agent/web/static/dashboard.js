@@ -92,6 +92,40 @@
     elements.statusMessage.classList.add(type === "error" ? "status-message-error" : "status-message-info");
   }
 
+  function redirectToLogin(message = "Sua sessão expirou. Entre novamente.") {
+    stopStalePolling();
+    sessionClosed = true;
+    if (heartbeatTimer) {
+      clearInterval(heartbeatTimer);
+      heartbeatTimer = null;
+    }
+    const query = new URLSearchParams({ erro: String(message || "") });
+    window.location.href = `/login?${query.toString()}`;
+  }
+
+  async function ensureAuthenticatedResponse(response) {
+    if (response.redirected && String(response.url || "").includes("/login")) {
+      redirectToLogin();
+      return null;
+    }
+
+    if (response.status === 401) {
+      let detail = "Sua sessão expirou. Entre novamente.";
+      try {
+        const payload = await response.json();
+        if (payload?.detail) {
+          detail = String(payload.detail);
+        }
+      } catch (_error) {
+        detail = "Sua sessão expirou. Entre novamente.";
+      }
+      redirectToLogin(detail);
+      return null;
+    }
+
+    return response;
+  }
+
   function uniqueGameCount(bets) {
     return new Set((bets || []).map((bet) => getBetGameKey(bet))).size;
   }
@@ -772,7 +806,11 @@
   async function loadDashboard() {
     try {
       const response = await fetch("/bets", { cache: "no-store" });
-      const payload = await response.json();
+      const authResponse = await ensureAuthenticatedResponse(response);
+      if (!authResponse) {
+        return { hasError: true, isFresh: false };
+      }
+      const payload = await authResponse.json();
       const hasError = Boolean(payload?.error_message) || String(payload?.status || "").toLowerCase() === "error";
       const isFresh = isPayloadFromToday(payload);
       const warningMessage = String(payload?.warning_message || "").trim();
@@ -804,9 +842,10 @@
 
   async function startBrowserSession() {
     const response = await fetch("/session/start", { method: "POST" });
-    if (!response.ok) return;
+    const authResponse = await ensureAuthenticatedResponse(response);
+    if (!authResponse || !authResponse.ok) return;
 
-    const payload = await response.json();
+    const payload = await authResponse.json();
     sessionId = payload.session_id;
 
     heartbeatTimer = setInterval(() => {
@@ -814,7 +853,9 @@
       fetch(`/session/heartbeat?session_id=${encodeURIComponent(sessionId)}`, {
         method: "POST",
         keepalive: true,
-      });
+      })
+        .then(ensureAuthenticatedResponse)
+        .catch(() => {});
     }, 10000);
   }
 

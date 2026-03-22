@@ -10,6 +10,23 @@
 <body>
   <div id="dashboard-root">
     <main class="container-xl py-4 py-lg-5 dashboard-stage" id="share-capture">
+      <section class="panel-shell mb-3 px-3 py-3">
+        <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap">
+          <div>
+            <div class="text-uppercase small text-muted">Sessão ativa</div>
+            <div class="fw-semibold">{{ usuario_nome or "Usuário" }}</div>
+          </div>
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            {% if usuario_perfil == "admin" %}
+            <a href="/admin" class="btn btn-outline-dark btn-sm">Admin</a>
+            {% endif %}
+            <form method="post" action="/auth/logout" class="m-0">
+              <button type="submit" class="btn btn-dark btn-sm">Sair</button>
+            </form>
+          </div>
+        </div>
+      </section>
+
       <header class="hero-header text-center mb-4">
         <div class="hero-kicker">Painel profissional de apostas em futebol</div>
         <h1 class="hero-title">OddsEdge <span class="hero-ball">⚽</span></h1>

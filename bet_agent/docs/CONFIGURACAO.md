@@ -40,6 +40,23 @@ Arquivos modelo:
 - `DIRETORIO_BANCO`: diretorio do banco SQLite
 - `NOME_ARQUIVO_BANCO`: nome do arquivo `.db`
 
+### Acesso inicial
+
+- `ADMIN_NOME_INICIAL`: nome do admin inicial
+- `ADMIN_EMAIL_INICIAL`: email do admin inicial
+- `ADMIN_SENHA_INICIAL`: senha do admin inicial
+- `AUTH_COOKIE_NAME`: nome do cookie de sessao autenticada
+- `AUTH_SESSION_DURATION_HOURS`: duracao da sessao autenticada em horas
+- `AUTH_COOKIE_SECURE`: envia o cookie autenticado apenas em HTTPS quando `true`
+
+No ambiente `local`, se essas variaveis nao forem definidas, o projeto usa por padrao:
+
+- `ADMIN_NOME_INICIAL=Admin`
+- `ADMIN_EMAIL_INICIAL=tiagoch25@gmail.com`
+- `ADMIN_SENHA_INICIAL=admin123`
+
+Em ambientes nao locais, o recomendado e definir explicitamente essas variaveis no processo ou no arquivo `.env.<APP_ENV>`.
+
 ### Pipeline e operacao
 
 - `SKIP_PIPELINE_ON_START`: sobe apenas a web
@@ -87,6 +104,12 @@ API_FOOTBALL_KEY=...
 THE_ODDS_API_KEY=...
 SERVER_PORT=8000
 ENABLE_IDLE_SHUTDOWN=true
+ADMIN_NOME_INICIAL=Admin
+ADMIN_EMAIL_INICIAL=tiagoch25@gmail.com
+ADMIN_SENHA_INICIAL=admin123
+AUTH_COOKIE_NAME=oddsedge_auth
+AUTH_SESSION_DURATION_HOURS=168
+AUTH_COOKIE_SECURE=false
 ODDS_MAX_SPORTS_PER_RUN=2
 ODDS_PREFERRED_BOOKMAKERS=pinnacle,betfair_ex_eu,betfair_sb_uk,betway,onexbet
 ODDS_RELEVANT_BOOKMAKERS=pinnacle,bet365,betfair,betano,sportingbet,betway,novibet,1xbet,parimatch,kto,pixbet,estrelabet,betnacional,aposta ganha,bodog,galera.bet,esportivabet
@@ -103,4 +126,10 @@ SERVER_PORT=8000
 ENABLE_IDLE_SHUTDOWN=false
 DATA_DIR=/app/runtime
 DIRETORIO_BANCO=/app/runtime
+ADMIN_NOME_INICIAL=Admin
+ADMIN_EMAIL_INICIAL=admin@suaempresa.com
+ADMIN_SENHA_INICIAL=trocar-antes-de-subir
+AUTH_COOKIE_NAME=oddsedge_auth
+AUTH_SESSION_DURATION_HOURS=168
+AUTH_COOKIE_SECURE=true
 ```

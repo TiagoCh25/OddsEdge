@@ -278,6 +278,22 @@ def _default_diretorio_banco() -> str:
     return _default_data_dir()
 
 
+def _default_admin_nome_inicial() -> str:
+    return "Admin" if _app_env() == "local" else ""
+
+
+def _default_admin_email_inicial() -> str:
+    return "tiagoch25@gmail.com" if _app_env() == "local" else ""
+
+
+def _default_admin_senha_inicial() -> str:
+    return "admin123" if _app_env() == "local" else ""
+
+
+def _default_auth_cookie_secure() -> bool:
+    return _is_production_env()
+
+
 @dataclass(frozen=True)
 class Settings:
     app_env: str = _app_env()
@@ -334,6 +350,12 @@ class Settings:
     persistir_em_banco: bool = _parse_bool_env("PERSISTIR_EM_BANCO", True)
     nome_arquivo_banco: str = os.getenv("NOME_ARQUIVO_BANCO", "historico_apostas.db")
     diretorio_banco: str = os.getenv("DIRETORIO_BANCO", _default_diretorio_banco())
+    admin_nome_inicial: str = os.getenv("ADMIN_NOME_INICIAL", _default_admin_nome_inicial())
+    admin_email_inicial: str = os.getenv("ADMIN_EMAIL_INICIAL", _default_admin_email_inicial())
+    admin_senha_inicial: str = os.getenv("ADMIN_SENHA_INICIAL", _default_admin_senha_inicial())
+    auth_cookie_name: str = os.getenv("AUTH_COOKIE_NAME", "oddsedge_auth")
+    auth_session_duration_hours: int = int(os.getenv("AUTH_SESSION_DURATION_HOURS", "168"))
+    auth_cookie_secure: bool = _parse_bool_env("AUTH_COOKIE_SECURE", _default_auth_cookie_secure())
 
     project_root: Path = PROJECT_ROOT
 

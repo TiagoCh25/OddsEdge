@@ -2,7 +2,7 @@
 
 ## Visao geral
 
-O projeto usa SQLite para historico operacional.
+O projeto usa SQLite para historico operacional e para a base inicial de acesso.
 
 O arquivo do banco e definido por:
 
@@ -143,6 +143,86 @@ Armazena erros por partida sem derrubar a execucao inteira.
 | `mensagem_erro` | TEXT | mensagem amigavel do erro |
 | `detalhe_json` | TEXT | snapshot completo do erro persistido |
 | `criado_em` | TEXT | timestamp de persistencia |
+
+### `usuarios`
+
+Base inicial de usuarios do MVP comercial.
+
+| Coluna | Tipo | Descricao |
+|---|---|---|
+| `id` | INTEGER | PK autoincremento |
+| `nome` | TEXT | nome do usuario |
+| `email` | TEXT | email original informado |
+| `email_normalizado` | TEXT | email normalizado para busca e unicidade |
+| `senha_hash` | TEXT | hash seguro da senha |
+| `perfil` | TEXT | `usuario` ou `admin` |
+| `plano` | TEXT | `gratis` ou `pro` |
+| `status` | TEXT | `ativo` ou `bloqueado` |
+| `criado_em` | TEXT | timestamp de criacao |
+| `atualizado_em` | TEXT | timestamp de ultima atualizacao |
+| `ultimo_login_em` | TEXT | timestamp do ultimo login, quando existir |
+| `expira_em` | TEXT | expiracao do acesso, quando aplicavel |
+
+Regras:
+
+- `email` e unico
+- `email_normalizado` e unico
+- indices auxiliares em `perfil`, `plano` e `status`
+
+### `planos`
+
+Catalogo inicial de planos do produto.
+
+| Coluna | Tipo | Descricao |
+|---|---|---|
+| `id` | INTEGER | PK autoincremento |
+| `codigo` | TEXT | identificador unico do plano |
+| `nome` | TEXT | nome exibido |
+| `descricao` | TEXT | descricao curta |
+| `limite_apostas_dia` | INTEGER | limite diario; `NULL` quando nao houver |
+| `preco_mensal_centavos` | INTEGER | preco mensal em centavos |
+| `ativo` | INTEGER | `1` ativo, `0` inativo |
+| `criado_em` | TEXT | timestamp de criacao |
+| `atualizado_em` | TEXT | timestamp de ultima atualizacao |
+
+Seeds idempotentes:
+
+- `gratis`: `Grátis`, `1 recomendação por dia`, limite `1`, preco `0`, ativo `1`
+- `pro`: `Pro`, `acesso completo às recomendações`, limite `NULL`, preco `0`, ativo `1`
+
+### `sessoes_usuario`
+
+Estrutura de autenticacao via sessao para login e logout do MVP.
+
+| Coluna | Tipo | Descricao |
+|---|---|---|
+| `id` | INTEGER | PK autoincremento |
+| `usuario_id` | INTEGER | FK para `usuarios.id` |
+| `token_sessao_hash` | TEXT | hash unico do token da sessao |
+| `criado_em` | TEXT | timestamp de criacao |
+| `atualizado_em` | TEXT | timestamp de atualizacao |
+| `expira_em` | TEXT | expiracao da sessao |
+| `encerrada_em` | TEXT | encerramento explicito, quando existir |
+| `ativo` | INTEGER | `1` ativa, `0` inativa |
+| `ip` | TEXT | IP de origem, quando disponivel |
+| `user_agent` | TEXT | user-agent da sessao, quando disponivel |
+
+Regras:
+
+- `usuario_id` referencia `usuarios(id)`
+- indice por `usuario_id`
+- indice unico por `token_sessao_hash`
+- indice por `expira_em` e `ativo`
+- o cookie do navegador guarda apenas o token real; o banco persiste somente `token_sessao_hash`
+- quando um usuario e bloqueado pela area admin, suas sessoes ativas sao invalidadas
+
+## Bootstrap inicial
+
+Ao subir a camada web, o projeto inicializa de forma idempotente:
+
+- as tabelas `usuarios`, `planos` e `sessoes_usuario`
+- os planos `gratis` e `pro`
+- um usuario admin inicial, se ainda nao existir nenhum `perfil='admin'`
 
 ## Mercados suportados
 

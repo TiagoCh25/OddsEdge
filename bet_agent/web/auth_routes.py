@@ -42,21 +42,25 @@ def _render_auth_template(
     mensagem_erro: str = "",
     mensagem_sucesso: str = "",
     valores: dict[str, str] | None = None,
+    extra_context: dict[str, object] | None = None,
     status_code: int = 200,
 ) -> HTMLResponse:
+    context = {
+        "request": request,
+        "titulo": titulo,
+        "subtitulo": subtitulo,
+        "acao": acao,
+        "mensagem_erro": mensagem_erro,
+        "mensagem_sucesso": mensagem_sucesso,
+        "valores": valores or {},
+        "static_version": str(int(time.time())),
+    }
+    if extra_context:
+        context.update(extra_context)
     response = templates.TemplateResponse(
         request,
         template_name,
-        {
-            "request": request,
-            "titulo": titulo,
-            "subtitulo": subtitulo,
-            "acao": acao,
-            "mensagem_erro": mensagem_erro,
-            "mensagem_sucesso": mensagem_sucesso,
-            "valores": valores or {},
-            "static_version": str(int(time.time())),
-        },
+        context,
     )
     response.status_code = status_code
     response.headers["Cache-Control"] = "no-store"
@@ -105,7 +109,7 @@ def _clear_auth_cookie(response: RedirectResponse) -> None:
 @router.get("/login", response_class=HTMLResponse)
 def login_page(request: Request):
     if obter_usuario_logado_opcional(request):
-        return RedirectResponse(url="/", status_code=303)
+        return RedirectResponse(url="/dashboard", status_code=303)
     return _render_auth_template(
         "login.html",
         request,
@@ -120,7 +124,7 @@ def login_page(request: Request):
 @router.get("/cadastro", response_class=HTMLResponse)
 def cadastro_page(request: Request):
     if obter_usuario_logado_opcional(request):
-        return RedirectResponse(url="/", status_code=303)
+        return RedirectResponse(url="/dashboard", status_code=303)
     return _render_auth_template(
         "cadastro.html",
         request,
@@ -132,10 +136,51 @@ def cadastro_page(request: Request):
     )
 
 
+@router.get("/esqueci-senha", response_class=HTMLResponse)
+def esqueci_senha_page(request: Request):
+    if obter_usuario_logado_opcional(request):
+        return RedirectResponse(url="/dashboard", status_code=303)
+    return _render_auth_template(
+        "esqueci_senha.html",
+        request,
+        titulo="Recuperar senha",
+        subtitulo="Informe seu email e enviaremos um link para redefinicao de senha.",
+        acao="/auth/esqueci-senha",
+        mensagem_erro=str(request.query_params.get("erro", "") or ""),
+        mensagem_sucesso=str(request.query_params.get("sucesso", "") or ""),
+    )
+
+
+@router.get("/redefinir-senha", response_class=HTMLResponse)
+def redefinir_senha_page(request: Request):
+    if obter_usuario_logado_opcional(request):
+        return RedirectResponse(url="/dashboard", status_code=303)
+    token = str(request.query_params.get("token", "") or "")
+    mensagem_erro = str(request.query_params.get("erro", "") or "")
+    token_valido = False
+    if token and not mensagem_erro:
+        try:
+            AutenticacaoService.validar_token_recuperacao(get_repositorio_acesso(), token)
+            token_valido = True
+        except AutenticacaoErro as exc:
+            mensagem_erro = str(exc)
+    return _render_auth_template(
+        "redefinir_senha.html",
+        request,
+        titulo="Redefinir senha",
+        subtitulo="Defina uma nova senha para voltar a acessar sua conta.",
+        acao="/auth/redefinir-senha",
+        mensagem_erro=mensagem_erro,
+        mensagem_sucesso=str(request.query_params.get("sucesso", "") or ""),
+        extra_context={"token": token, "token_valido": token_valido},
+        status_code=400 if mensagem_erro else 200,
+    )
+
+
 @router.post("/auth/cadastro")
 async def auth_cadastro(request: Request):
     if obter_usuario_logado_opcional(request):
-        return RedirectResponse(url="/", status_code=303)
+        return RedirectResponse(url="/dashboard", status_code=303)
 
     form = await _parse_form_urlencoded(request)
     nome = str(form.get("nome", "") or "")
@@ -170,7 +215,7 @@ async def auth_cadastro(request: Request):
 @router.post("/auth/login")
 async def auth_login(request: Request):
     if obter_usuario_logado_opcional(request):
-        return RedirectResponse(url="/", status_code=303)
+        return RedirectResponse(url="/dashboard", status_code=303)
 
     form = await _parse_form_urlencoded(request)
     email = str(form.get("email", "") or "")
@@ -202,9 +247,76 @@ async def auth_login(request: Request):
         ip=_request_ip(request),
         user_agent=_request_user_agent(request),
     )
-    response = RedirectResponse(url="/", status_code=303)
+    response = RedirectResponse(url="/dashboard", status_code=303)
     _set_auth_cookie(response, sessao)
     return response
+
+
+@router.post("/auth/esqueci-senha")
+async def auth_esqueci_senha(request: Request):
+    if obter_usuario_logado_opcional(request):
+        return RedirectResponse(url="/dashboard", status_code=303)
+
+    form = await _parse_form_urlencoded(request)
+    email = str(form.get("email", "") or "")
+
+    try:
+        AutenticacaoService.solicitar_recuperacao_senha(
+            get_repositorio_acesso(),
+            email=email,
+            duracao_minutos=settings.reset_senha_expiracao_minutos,
+            app_base_url=settings.app_base_url,
+            ip=_request_ip(request),
+            user_agent=_request_user_agent(request),
+        )
+    except AutenticacaoErro as exc:
+        return _render_auth_template(
+            "esqueci_senha.html",
+            request,
+            titulo="Recuperar senha",
+            subtitulo="Informe seu email e enviaremos um link para redefinicao de senha.",
+            acao="/auth/esqueci-senha",
+            mensagem_erro=str(exc),
+            valores={"email": email},
+            status_code=400,
+        )
+
+    return _redirect_with_message(
+        "/esqueci-senha",
+        sucesso="Se existir uma conta com esse email, enviaremos um link de recuperacao.",
+    )
+
+
+@router.post("/auth/redefinir-senha")
+async def auth_redefinir_senha(request: Request):
+    if obter_usuario_logado_opcional(request):
+        return RedirectResponse(url="/dashboard", status_code=303)
+
+    form = await _parse_form_urlencoded(request)
+    token = str(form.get("token", "") or "")
+    senha = str(form.get("senha", "") or "")
+    confirmar_senha = str(form.get("confirmar_senha", "") or "")
+
+    try:
+        AutenticacaoService.redefinir_senha_por_token(
+            get_repositorio_acesso(),
+            token=token,
+            senha=senha,
+            confirmar_senha=confirmar_senha,
+        )
+    except AutenticacaoErro as exc:
+        return _render_auth_template(
+            "redefinir_senha.html",
+            request,
+            titulo="Redefinir senha",
+            subtitulo="Defina uma nova senha para voltar a acessar sua conta.",
+            acao="/auth/redefinir-senha",
+            mensagem_erro=str(exc),
+            extra_context={"token": token, "token_valido": True},
+            status_code=400,
+        )
+
+    return _redirect_with_message("/login", sucesso="Senha redefinida com sucesso. Entre com a nova senha.")
 
 
 @router.post("/auth/logout")

@@ -22,6 +22,9 @@ O dashboard destaca placares ao vivo no proprio nome do confronto e mostra, em c
 O dashboard do cliente nao expoe botao de compartilhamento.
 A camada web inicializa de forma idempotente a base de acesso no mesmo SQLite do projeto, incluindo os planos `gratis` e `pro` e o admin inicial configurado por ambiente.
 Login, cadastro e logout usam sessao por cookie HTTPOnly, e o dashboard HTML agora exige usuario autenticado. A area `/admin` foi adicionada com controle de acesso por perfil.
+O fluxo de recuperacao de senha usa token unico com expiracao, enviado por email ou salvo em arquivo local conforme configuracao.
+No dashboard, usuarios `gratis` veem apenas 1 recomendacao elegivel por dia, enquanto `pro` e `admin` veem todas as recomendacoes validas do momento.
+Agora `GET /` funciona como landing page comercial publica, enquanto usuarios autenticados sao redirecionados para `GET /dashboard`.
 
 ## Requisitos
 
@@ -61,13 +64,19 @@ python main.py pipeline
 
 ## Endpoints
 
-- `GET /`: dashboard HTML
-- `GET /bets`: payload atual com recomendacoes
+- `GET /`: landing page publica
+- `GET /planos`: landing publica com foco comercial nos planos
+- `GET /dashboard`: dashboard HTML autenticado
+- `GET /bets`: payload atual filtrado pelo plano do usuario autenticado
 - `GET /health`: healthcheck da aplicacao e das APIs externas
 - `GET /login`: tela de login
 - `POST /auth/login`: processa login e cria sessao autenticada
 - `GET /cadastro`: tela de cadastro
 - `POST /auth/cadastro`: cria conta de usuario
+- `GET /esqueci-senha`: tela para solicitar recuperacao de senha
+- `POST /auth/esqueci-senha`: gera link temporario de recuperacao
+- `GET /redefinir-senha`: tela publica para redefinir senha por token
+- `POST /auth/redefinir-senha`: salva a nova senha e invalida sessoes antigas
 - `POST /auth/logout`: encerra a sessao autenticada atual
 - `GET /admin`: painel admin inicial protegido para `perfil=admin`
 - `POST /admin/usuarios/{id}/plano`: atualiza plano de usuario

@@ -130,6 +130,23 @@ body.auth-page {
   text-align: center;
 }
 
+.auth-helper {
+  margin: 0.9rem 0 0;
+  text-align: right;
+}
+
+.auth-helper a,
+.auth-links a {
+  color: var(--oddsedge-accent);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.auth-helper a:hover,
+.auth-links a:hover {
+  text-decoration: underline;
+}
+
 .auth-switch a {
   color: var(--oddsedge-accent);
   font-weight: 700;
@@ -142,6 +159,28 @@ body.auth-page {
 
 .alert {
   border-radius: 14px;
+}
+
+.auth-note {
+  margin: 1rem 0 0;
+  color: var(--oddsedge-muted);
+  font-size: 0.94rem;
+  line-height: 1.7;
+}
+
+.auth-links {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.2rem;
+  flex-wrap: wrap;
+}
+
+.auth-empty-state {
+  padding: 1rem 1.1rem;
+  border: 1px solid rgba(22, 33, 39, 0.08);
+  border-radius: 14px;
+  background: rgba(13, 122, 95, 0.04);
 }
 
 .password-strength-wrap {

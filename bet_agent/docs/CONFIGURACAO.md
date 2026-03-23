@@ -48,6 +48,15 @@ Arquivos modelo:
 - `AUTH_COOKIE_NAME`: nome do cookie de sessao autenticada
 - `AUTH_SESSION_DURATION_HOURS`: duracao da sessao autenticada em horas
 - `AUTH_COOKIE_SECURE`: envia o cookie autenticado apenas em HTTPS quando `true`
+- `APP_BASE_URL`: URL publica usada para montar links de recuperacao de senha
+- `RESET_SENHA_EXPIRACAO_MINUTOS`: validade do link de recuperacao
+- `EMAIL_MODO`: `arquivo` em local ou `smtp` quando houver entrega real
+- `EMAIL_REMETENTE`: remetente do email transacional
+- `SMTP_HOST`
+- `SMTP_PORT`
+- `SMTP_USUARIO`
+- `SMTP_SENHA`
+- `SMTP_TLS`
 
 No ambiente `local`, se essas variaveis nao forem definidas, o projeto usa por padrao:
 
@@ -110,6 +119,10 @@ ADMIN_SENHA_INICIAL=admin123
 AUTH_COOKIE_NAME=oddsedge_auth
 AUTH_SESSION_DURATION_HOURS=168
 AUTH_COOKIE_SECURE=false
+APP_BASE_URL=http://localhost:8000
+RESET_SENHA_EXPIRACAO_MINUTOS=60
+EMAIL_MODO=arquivo
+EMAIL_REMETENTE=no-reply@oddsedge.local
 ODDS_MAX_SPORTS_PER_RUN=2
 ODDS_PREFERRED_BOOKMAKERS=pinnacle,betfair_ex_eu,betfair_sb_uk,betway,onexbet
 ODDS_RELEVANT_BOOKMAKERS=pinnacle,bet365,betfair,betano,sportingbet,betway,novibet,1xbet,parimatch,kto,pixbet,estrelabet,betnacional,aposta ganha,bodog,galera.bet,esportivabet
@@ -132,4 +145,13 @@ ADMIN_SENHA_INICIAL=trocar-antes-de-subir
 AUTH_COOKIE_NAME=oddsedge_auth
 AUTH_SESSION_DURATION_HOURS=168
 AUTH_COOKIE_SECURE=true
+APP_BASE_URL=https://seu-dominio.com
+RESET_SENHA_EXPIRACAO_MINUTOS=60
+EMAIL_MODO=smtp
+EMAIL_REMETENTE=no-reply@seu-dominio.com
+SMTP_HOST=smtp.seu-provedor.com
+SMTP_PORT=587
+SMTP_USUARIO=usuario
+SMTP_SENHA=senha
+SMTP_TLS=true
 ```

@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>OddsEdge | Mais dados. Menos achismo.</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous" />
+  <link rel="stylesheet" href="/static/landing.css?v={{ static_version }}" />
+</head>
+<body class="landing-page">
+  <header class="landing-header sticky-top">
+    <nav class="navbar navbar-expand-lg">
+      <div class="container">
+        <a class="navbar-brand landing-brand" href="/">OddsEdge <span>⚽</span></a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#landing-nav" aria-controls="landing-nav" aria-expanded="false" aria-label="Abrir navegação">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="landing-nav">
+          <ul class="navbar-nav ms-auto me-lg-3">
+            <li class="nav-item"><a class="nav-link" href="#como-funciona">Como funciona</a></li>
+            <li class="nav-item"><a class="nav-link" href="#beneficios">Benefícios</a></li>
+            <li class="nav-item"><a class="nav-link" href="#planos">Planos</a></li>
+            <li class="nav-item"><a class="nav-link" href="#regra-gratis">Gratis</a></li>
+            <li class="nav-item"><a class="nav-link" href="#em-breve">Em breve</a></li>
+          </ul>
+
+          <div class="landing-nav-actions d-flex align-items-center gap-2">
+            {% if usuario_autenticado %}
+            <a href="/dashboard" class="btn landing-btn-nav landing-btn-nav-primary">Ir para dashboard</a>
+            {% else %}
+            <a href="/login" class="btn landing-btn-nav landing-btn-nav-secondary">Entrar</a>
+            <a href="/cadastro" class="btn landing-btn-nav landing-btn-nav-primary">Criar conta</a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <section class="landing-hero">
+      <div class="container">
+        <div class="row align-items-center g-4">
+          <div class="col-12 col-lg-7">
+            <div class="hero-kicker">Produto SaaS para análise de apostas em futebol</div>
+            <h1 class="hero-title">OddsEdge <span>⚽</span></h1>
+            <p class="hero-subtitle">Mais dados. Menos achismo.</p>
+            <p class="hero-copy">
+              Plataforma de análise para apostas em futebol baseada em dados e probabilidades.
+            </p>
+            <p class="hero-copy hero-copy-strong">
+              Recomendações de apostas em futebol focadas em mercados mais seguros, alta probabilidade e valor esperado positivo.
+            </p>
+            <p class="hero-copy hero-copy-support">
+              Foco em seleções consistentes, evitando apostas de alto risco e priorizando decisões mais inteligentes no longo prazo.
+            </p>
+
+            <div class="hero-actions d-flex flex-wrap gap-3">
+              <a href="/cadastro" class="btn btn-hero-primary btn-lg">Criar conta</a>
+              <a href="/login" class="btn btn-hero-secondary btn-lg">Entrar</a>
+              <a href="#como-funciona" class="btn btn-hero-link btn-lg">Ver como funciona</a>
+            </div>
+          </div>
+
+          <div class="col-12 col-lg-5">
+            <div class="hero-preview-card">
+              <div class="preview-topline">Visão rápida do produto</div>
+              <div class="preview-metric-grid">
+                <article class="preview-metric">
+                  <span class="preview-label">Probabilidade</span>
+                  <strong>73.4%</strong>
+                </article>
+                <article class="preview-metric">
+                  <span class="preview-label">EV</span>
+                  <strong>+0.142</strong>
+                </article>
+                <article class="preview-metric">
+                  <span class="preview-label">Mercado</span>
+                  <strong>Over 1.5</strong>
+                </article>
+                <article class="preview-metric">
+                  <span class="preview-label">Velocidade</span>
+                  <strong>Leitura clara</strong>
+                </article>
+              </div>
+              <div class="preview-note">
+                OddsEdge organiza dados, probabilidade e valor esperado em uma visão simples para decisão mais criteriosa.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="landing-section" id="como-funciona">
+      <div class="container">
+        <div class="section-head text-center">
+          <span class="section-kicker">Como funciona</span>
+          <h2>Um fluxo objetivo para transformar dados em oportunidade</h2>
+          <p>O OddsEdge reduz ruído operacional e destaca o que realmente merece atenção.</p>
+        </div>
+
+        <div class="row g-4">
+          <div class="col-12 col-md-6 col-xl-3">
+            <article class="feature-card">
+              <div class="feature-step">1</div>
+              <h3>Coletamos jogos e odds do dia</h3>
+              <p>Consolidamos a base necessária para começar a análise da rodada.</p>
+            </article>
+          </div>
+          <div class="col-12 col-md-6 col-xl-3">
+            <article class="feature-card">
+              <div class="feature-step">2</div>
+              <h3>Aplicamos análise estatística e probabilidade</h3>
+              <p>Transformamos dados brutos em leitura prática para apoiar a decisão.</p>
+            </article>
+          </div>
+          <div class="col-12 col-md-6 col-xl-3">
+            <article class="feature-card">
+              <div class="feature-step">3</div>
+              <h3>Calculamos valor esperado das apostas</h3>
+              <p>Priorizamos mercados em que a relação entre risco e preço faz mais sentido.</p>
+            </article>
+          </div>
+          <div class="col-12 col-md-6 col-xl-3">
+            <article class="feature-card">
+              <div class="feature-step">4</div>
+              <h3>Selecionamos as melhores oportunidades</h3>
+              <p>Selecionamos apenas as oportunidades com maior probabilidade e melhor equilíbrio entre risco e retorno.</p>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="landing-section landing-section-tight">
+      <div class="container">
+        <div class="positioning-card">
+          <span class="section-kicker">Nossa abordagem</span>
+          <h2>Dado antes de impulso</h2>
+          <p>
+            Diferente de apostas agressivas e de alto risco, o OddsEdge prioriza mercados mais previsíveis e decisões baseadas em probabilidade.
+          </p>
+          <p class="positioning-emphasis">
+            Nosso objetivo é consistência, não sorte.
+          </p>
+          <p class="positioning-note">
+            Foco em mercados mais seguros e seleções com alta probabilidade de acerto.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="landing-section section-alt" id="beneficios">
+      <div class="container">
+        <div class="section-head text-center">
+          <span class="section-kicker">Benefícios</span>
+          <h2>Mais clareza, menos improviso</h2>
+          <p>O produto foi pensado para quem quer filtrar melhor o que vale ou não vale atenção.</p>
+        </div>
+
+        <div class="row g-4">
+          <div class="col-12 col-md-6 col-xl-4">
+            <article class="benefit-card">
+              <h3>Mercados mais seguros e previsíveis</h3>
+              <p>Priorização de cenários mais estáveis para reduzir exposição desnecessária ao risco.</p>
+            </article>
+          </div>
+          <div class="col-12 col-md-6 col-xl-4">
+            <article class="benefit-card">
+              <h3>Seleções com alta probabilidade de acerto</h3>
+              <p>Leitura estatística orientada a escolhas mais consistentes e menos impulsivas.</p>
+            </article>
+          </div>
+          <div class="col-12 col-md-6 col-xl-4">
+            <article class="benefit-card">
+              <h3>Menor variância nas decisões</h3>
+              <p>Uma abordagem mais disciplinada para evitar oscilações típicas de apostas agressivas.</p>
+            </article>
+          </div>
+          <div class="col-12 col-md-6 col-xl-4">
+            <article class="benefit-card">
+              <h3>Foco em consistência no longo prazo</h3>
+              <p>O produto organiza oportunidades que façam sentido além do curto prazo e do efeito momento.</p>
+            </article>
+          </div>
+          <div class="col-12 col-md-6 col-xl-4">
+            <article class="benefit-card">
+              <h3>Análise baseada em dados, não achismo</h3>
+              <p>Probabilidade, valor esperado e leitura estatística servem como base da recomendação.</p>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="landing-section" id="planos">
+      <div class="container">
+        <div class="section-head text-center">
+          <span class="section-kicker">Planos</span>
+          <h2>Escolha como começar no OddsEdge</h2>
+          <p>O MVP já diferencia uma entrada gratuita e uma experiência completa.</p>
+        </div>
+
+        <div class="row g-4 justify-content-center">
+          <div class="col-12 col-lg-5">
+            <article class="plan-card">
+              <div class="plan-badge">Entrada</div>
+              <h3>Plano Grátis</h3>
+              <p class="plan-copy">Ideal para conhecer a plataforma e o fluxo de recomendação.</p>
+              <div class="plan-price">1 recomendação por dia</div>
+              <ul class="plan-list">
+                <li>Acesso inicial ao produto</li>
+                <li>Leitura prática da recomendação do dia</li>
+                <li>Entrada sem custo</li>
+              </ul>
+              <a href="/cadastro" class="btn btn-plan-secondary w-100">Começar grátis</a>
+            </article>
+          </div>
+
+          <div class="col-12 col-lg-5">
+            <article class="plan-card plan-card-featured">
+              <div class="plan-badge">Recomendado</div>
+              <h3>Plano Pro</h3>
+              <p class="plan-copy">Acesso completo a recomendações focadas em consistência e alta probabilidade.</p>
+              <div class="plan-price">Acesso completo às recomendações</div>
+              <ul class="plan-list">
+                <li>Leitura completa das oportunidades</li>
+                <li>Foco em mercados mais seguros e seleções com alta probabilidade de acerto</li>
+                <li>Melhor opção para extrair valor do produto</li>
+              </ul>
+              <a href="/cadastro" class="btn btn-plan-primary w-100">Quero o Pro</a>
+            </article>
+          </div>
+        </div>
+        <div class="plan-rule-card" id="regra-gratis">
+          <span class="section-kicker">Como funciona o plano Gratis</span>
+          <h3>A recomendacao gratuita segue uma regra objetiva de elegibilidade</h3>
+          <p>
+            No plano Gratis, o OddsEdge mostra apenas 1 recomendacao por dia. Essa recomendacao precisa ser utilizavel no momento da visualizacao.
+          </p>
+          <div class="plan-rule-grid">
+            <div class="plan-rule-item">Jogo ainda nao iniciado</div>
+            <div class="plan-rule-item">Pelo menos 1 hora para comecar</div>
+            <div class="plan-rule-item">Odd minima de 1.30</div>
+            <div class="plan-rule-item">Maior probabilidade entre as elegiveis</div>
+          </div>
+          <p class="plan-rule-note">
+            Assim, a amostra gratuita mantem foco em mercados mais seguros e em uma oportunidade que ainda faz sentido para decisao.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="landing-section section-alt" id="em-breve">
+      <div class="container">
+        <div class="section-head text-center">
+          <span class="section-kicker">Em breve</span>
+          <h2>Estamos evoluindo constantemente o OddsEdge</h2>
+          <p>Estamos evoluindo constantemente a plataforma para oferecer mais inteligência e automação nas decisões de apostas.</p>
+        </div>
+
+        <div class="row g-4">
+          <div class="col-12 col-md-4">
+            <article class="future-card">
+              <h3>IA para múltiplas inteligentes</h3>
+              <p>Combinações mais criteriosas com camadas adicionais de apoio à decisão.</p>
+            </article>
+          </div>
+          <div class="col-12 col-md-4">
+            <article class="future-card">
+              <h3>Histórico de performance</h3>
+              <p>Visão de ROI e taxa de acerto para acompanhar desempenho com clareza.</p>
+            </article>
+          </div>
+          <div class="col-12 col-md-4">
+            <article class="future-card">
+              <h3>Análise avançada por ligas e mercados</h3>
+              <p>Mais profundidade para quem deseja comparar padrões e refinar a operação.</p>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="landing-cta">
+      <div class="container">
+        <div class="cta-card text-center">
+          <span class="section-kicker">Comece agora</span>
+          <h2>Comece agora a apostar com mais critério e menos achismo.</h2>
+          <div class="hero-actions d-flex justify-content-center flex-wrap gap-3">
+            <a href="/cadastro" class="btn btn-hero-primary btn-lg">Criar conta</a>
+            <a href="/login" class="btn btn-hero-secondary btn-lg">Entrar</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="landing-footer">
+    <div class="container d-flex justify-content-between align-items-center gap-3 flex-wrap">
+      <div>
+        <div class="landing-footer-brand">OddsEdge ⚽</div>
+        <div class="landing-footer-copy">Mais dados. Menos achismo.</div>
+        <div class="landing-footer-copy">Plataforma de análise para apostas em futebol.</div>
+      </div>
+
+      <div class="landing-footer-links d-flex gap-3 flex-wrap">
+        <a href="/login">Entrar</a>
+        <a href="/cadastro">Criar conta</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+  <script src="/static/landing.js?v={{ static_version }}"></script>
+</body>
+</html>

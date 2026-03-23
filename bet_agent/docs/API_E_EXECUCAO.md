@@ -27,11 +27,36 @@
 
 ### `GET /`
 
-Retorna o dashboard HTML.
+Retorna a landing page comercial publica quando nao ha sessao autenticada.
+
+Se o usuario ja estiver autenticado, a rota redireciona para `GET /dashboard`.
+
+### `GET /planos`
+
+Retorna a landing comercial com foco na secao de planos. Pode ser usada como destino de CTAs de upgrade sem redirecionar usuarios autenticados para o dashboard.
+
+### `GET /dashboard`
+
+Retorna o dashboard HTML autenticado.
 
 ### `GET /bets`
 
-Retorna o payload atual com:
+Retorna o payload atual filtrado pelo perfil/plano do usuario autenticado.
+
+Regras de exibicao:
+
+- `gratis`: recebe apenas 1 recomendacao elegivel por dia, com odd minima `1.30`, inicio futuro e pelo menos 1 hora de antecedencia
+- `pro`: recebe todas as recomendacoes validas do momento
+- `admin`: recebe todas as recomendacoes validas do momento
+
+O payload inclui metadados extras para o frontend comunicar o estado da tela do dashboard, como:
+
+- `dashboard_estado`
+- `dashboard_mensagem`
+- `dashboard_mensagem_auxiliar`
+- `dashboard_mostrar_upgrade`
+
+Tambem retorna os campos usuais:
 
 - `generated_at`
 - `scores_updated_at`
@@ -99,6 +124,22 @@ Retorna a tela HTML de cadastro.
 ### `POST /auth/cadastro`
 
 Processa cadastro por formulario HTML, valida nome, email e senha, persiste o usuario com `perfil=usuario`, `plano=gratis` e `status=ativo`, e redireciona para a tela de login.
+
+### `GET /esqueci-senha`
+
+Retorna a tela HTML para solicitar recuperacao de senha.
+
+### `POST /auth/esqueci-senha`
+
+Processa o pedido de recuperacao por email, gera um token unico com expiracao e envia o link por email ou salva em arquivo local conforme configuracao.
+
+### `GET /redefinir-senha`
+
+Retorna a tela HTML de redefinicao de senha a partir de um token valido.
+
+### `POST /auth/redefinir-senha`
+
+Valida o token de recuperacao, salva a nova senha em hash seguro, invalida o token e encerra sessoes antigas do usuario.
 
 ### `POST /auth/logout`
 

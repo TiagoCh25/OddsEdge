@@ -294,6 +294,19 @@ def _default_auth_cookie_secure() -> bool:
     return _is_production_env()
 
 
+def _default_app_base_url() -> str:
+    porta = int(os.getenv("SERVER_PORT") or os.getenv("PORT", "8000"))
+    return f"http://localhost:{porta}" if _app_env() == "local" else ""
+
+
+def _default_email_modo() -> str:
+    return "smtp" if _is_production_env() else "arquivo"
+
+
+def _default_email_remetente() -> str:
+    return "no-reply@oddsedge.local" if _app_env() == "local" else ""
+
+
 @dataclass(frozen=True)
 class Settings:
     app_env: str = _app_env()
@@ -356,6 +369,15 @@ class Settings:
     auth_cookie_name: str = os.getenv("AUTH_COOKIE_NAME", "oddsedge_auth")
     auth_session_duration_hours: int = int(os.getenv("AUTH_SESSION_DURATION_HOURS", "168"))
     auth_cookie_secure: bool = _parse_bool_env("AUTH_COOKIE_SECURE", _default_auth_cookie_secure())
+    app_base_url: str = os.getenv("APP_BASE_URL", _default_app_base_url())
+    reset_senha_expiracao_minutos: int = int(os.getenv("RESET_SENHA_EXPIRACAO_MINUTOS", "60"))
+    email_modo: str = os.getenv("EMAIL_MODO", _default_email_modo())
+    email_remetente: str = os.getenv("EMAIL_REMETENTE", _default_email_remetente())
+    smtp_host: str = os.getenv("SMTP_HOST", "")
+    smtp_port: int = int(os.getenv("SMTP_PORT", "587"))
+    smtp_usuario: str = os.getenv("SMTP_USUARIO", "")
+    smtp_senha: str = os.getenv("SMTP_SENHA", "")
+    smtp_tls: bool = _parse_bool_env("SMTP_TLS", True)
 
     project_root: Path = PROJECT_ROOT
 

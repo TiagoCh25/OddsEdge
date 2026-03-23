@@ -28,6 +28,10 @@
     gameSelect: document.getElementById("game-filter"),
     betTypeSelect: document.getElementById("bet-type-filter"),
     betsTableBody: document.getElementById("bets-table-body"),
+    planStateBanner: document.getElementById("plan-state-banner"),
+    planStateTitle: document.getElementById("plan-state-title"),
+    planStateSubtitle: document.getElementById("plan-state-subtitle"),
+    planStateCta: document.getElementById("plan-state-cta"),
   };
 
   function toNumber(value, fallback = 0) {
@@ -653,6 +657,31 @@
     }
   }
 
+  function renderPlanState(payload) {
+    if (!(elements.planStateBanner instanceof HTMLElement)) return;
+
+    const mensagem = String(payload?.dashboard_mensagem || "").trim();
+    const mensagemAuxiliar = String(payload?.dashboard_mensagem_auxiliar || "").trim();
+    const mostrarUpgrade = Boolean(payload?.dashboard_mostrar_upgrade);
+
+    if (!mensagem && !mensagemAuxiliar) {
+      elements.planStateBanner.classList.add("d-none");
+      if (elements.planStateTitle) elements.planStateTitle.textContent = "";
+      if (elements.planStateSubtitle) elements.planStateSubtitle.textContent = "";
+      if (elements.planStateCta) elements.planStateCta.innerHTML = "";
+      return;
+    }
+
+    elements.planStateBanner.classList.remove("d-none");
+    if (elements.planStateTitle) elements.planStateTitle.textContent = mensagem;
+    if (elements.planStateSubtitle) elements.planStateSubtitle.textContent = mensagemAuxiliar;
+    if (elements.planStateCta) {
+      elements.planStateCta.innerHTML = mostrarUpgrade
+        ? '<a href="/planos#planos" class="dashboard-plan-pill">Plano Pro</a>'
+        : "";
+    }
+  }
+
   function renderMetrics(payload, bets) {
     const games = toNumber(payload?.total_games_analyzed, uniqueGameCount(bets));
     const betCount = toNumber(payload?.total_bets, bets.length);
@@ -819,6 +848,7 @@
       cachedBets = Array.isArray(payload?.bets) ? payload.bets : [];
 
       renderMeta(payload);
+      renderPlanState(payload);
       renderMetrics(payload, cachedBets);
       rerender();
 

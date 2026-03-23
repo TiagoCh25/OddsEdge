@@ -22,7 +22,7 @@
             <span class="admin-user-label">Logado como</span>
             <strong>{{ usuario_atual.get('nome', 'Admin') }}</strong>
           </div>
-          <a href="/" class="btn btn-outline-dark">Dashboard</a>
+          <a href="/dashboard" class="btn btn-outline-dark">Dashboard</a>
           <form method="post" action="/auth/logout" class="m-0">
             <button type="submit" class="btn btn-dark">Sair</button>
           </form>

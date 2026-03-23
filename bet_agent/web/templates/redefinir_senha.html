@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>OddsEdge | Login</title>
+  <title>OddsEdge | Redefinir senha</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous" />
   <link rel="stylesheet" href="/static/auth.css?v={{ static_version }}" />
 </head>
@@ -30,46 +30,52 @@
         <div class="alert alert-success" role="alert">{{ mensagem_sucesso }}</div>
         {% endif %}
 
+        {% if token_valido %}
         <form method="post" action="{{ acao }}" class="auth-form" novalidate>
-          <div class="mb-3">
-            <label for="email" class="form-label">Email</label>
-            <input
-              type="email"
-              class="form-control form-control-lg"
-              id="email"
-              name="email"
-              placeholder="voce@exemplo.com"
-              value="{{ valores.get('email', '') }}"
-              inputmode="email"
-              autocomplete="email"
-              required
-            />
-          </div>
+          <input type="hidden" name="token" value="{{ token }}" />
 
           <div class="mb-3">
-            <label for="senha" class="form-label">Senha</label>
+            <label for="senha" class="form-label">Nova senha</label>
             <input
               type="password"
               class="form-control form-control-lg"
               id="senha"
               name="senha"
-              placeholder="Sua senha"
-              autocomplete="current-password"
+              placeholder="Nova senha"
+              autocomplete="new-password"
               required
             />
           </div>
 
-          <button type="submit" class="btn btn-auth btn-lg w-100">Entrar</button>
+          <div class="mb-3">
+            <label for="confirmar_senha" class="form-label">Confirmar nova senha</label>
+            <input
+              type="password"
+              class="form-control form-control-lg"
+              id="confirmar_senha"
+              name="confirmar_senha"
+              placeholder="Repita a nova senha"
+              autocomplete="new-password"
+              required
+            />
+          </div>
+
+          <button type="submit" class="btn btn-auth btn-lg w-100">Salvar nova senha</button>
         </form>
 
-        <p class="auth-helper">
-          <a href="/esqueci-senha">Esqueci minha senha</a>
+        <p class="auth-note">
+          Use pelo menos 10 caracteres e evite senha comum, sequencia simples ou dados pessoais.
         </p>
+        {% else %}
+        <div class="auth-empty-state">
+          <p class="auth-note mb-0">Solicite um novo link para continuar com a recuperacao da sua conta.</p>
+        </div>
+        {% endif %}
 
-        <p class="auth-switch mb-0">
-          Ainda nao tem conta?
-          <a href="/cadastro">Cadastre-se</a>
-        </p>
+        <div class="auth-links">
+          <a href="/esqueci-senha">Solicitar novo link</a>
+          <a href="/login">Voltar para login</a>
+        </div>
       </div>
     </section>
   </main>

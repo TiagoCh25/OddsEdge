@@ -13,10 +13,12 @@ from datetime import datetime, timedelta
 from typing import Any
 
 from db.repositorio_acesso import (
+    DadosNovaRecuperacaoSenha,
     DadosNovaSessaoUsuario,
     DadosNovoUsuario,
     RepositorioAcessoSQLite,
 )
+from services.email_service import EmailService, EmailTransacional
 
 
 class AutenticacaoErro(Exception):
@@ -25,6 +27,12 @@ class AutenticacaoErro(Exception):
 
 @dataclass(frozen=True)
 class ResultadoSessaoAutenticada:
+    token: str
+    expira_em: datetime
+
+
+@dataclass(frozen=True)
+class ResultadoRecuperacaoSenha:
     token: str
     expira_em: datetime
 
@@ -194,6 +202,10 @@ class AutenticacaoService:
 
     @staticmethod
     def hash_token_sessao(token: str) -> str:
+        return hashlib.sha256(str(token or "").encode("utf-8")).hexdigest()
+
+    @staticmethod
+    def hash_token_recuperacao(token: str) -> str:
         return hashlib.sha256(str(token or "").encode("utf-8")).hexdigest()
 
     @classmethod
@@ -401,6 +413,133 @@ class AutenticacaoService:
         if not token_limpo:
             return 0
         return repositorio.encerrar_sessao_por_token_hash(cls.hash_token_sessao(token_limpo))
+
+    @classmethod
+    def criar_recuperacao_senha(
+        cls,
+        repositorio: RepositorioAcessoSQLite,
+        *,
+        usuario_id: int,
+        duracao_minutos: int,
+        ip: str = "",
+        user_agent: str = "",
+    ) -> ResultadoRecuperacaoSenha:
+        repositorio.cancelar_recuperacoes_ativas_por_usuario_id(usuario_id)
+        token = secrets.token_urlsafe(32)
+        expira_em = datetime.now() + timedelta(minutes=max(int(duracao_minutos), 5))
+        repositorio.criar_recuperacao_senha(
+            DadosNovaRecuperacaoSenha(
+                usuario_id=usuario_id,
+                token_hash=cls.hash_token_recuperacao(token),
+                expira_em=expira_em.isoformat(timespec="seconds"),
+                ip_solicitacao=str(ip or ""),
+                user_agent_solicitacao=str(user_agent or ""),
+            )
+        )
+        return ResultadoRecuperacaoSenha(token=token, expira_em=expira_em)
+
+    @classmethod
+    def solicitar_recuperacao_senha(
+        cls,
+        repositorio: RepositorioAcessoSQLite,
+        *,
+        email: str,
+        duracao_minutos: int,
+        app_base_url: str,
+        ip: str = "",
+        user_agent: str = "",
+    ) -> None:
+        email_limpo = str(email or "").strip()
+        if not email_limpo:
+            raise AutenticacaoErro("Informe seu email.")
+        if not cls.validar_email(email_limpo):
+            raise AutenticacaoErro("Informe um email valido.")
+        if not str(app_base_url or "").strip():
+            raise AutenticacaoErro("Recuperacao de senha indisponivel no momento.")
+
+        usuario = repositorio.buscar_usuario_por_email_normalizado(cls.normalizar_email(email_limpo))
+        if not usuario:
+            return
+
+        recuperacao = cls.criar_recuperacao_senha(
+            repositorio,
+            usuario_id=int(usuario["id"]),
+            duracao_minutos=duracao_minutos,
+            ip=ip,
+            user_agent=user_agent,
+        )
+        link = f"{str(app_base_url).rstrip('/')}/redefinir-senha?token={recuperacao.token}"
+        email_transacional = EmailTransacional(
+            destinatario=str(usuario.get("email") or email_limpo),
+            assunto="OddsEdge | Recuperacao de senha",
+            texto=(
+                "Recebemos uma solicitacao para redefinir sua senha no OddsEdge.\n\n"
+                f"Use este link: {link}\n\n"
+                f"Este link expira em {max(int(duracao_minutos), 5)} minutos.\n"
+                "Se voce nao solicitou essa alteracao, pode ignorar este email."
+            ),
+            html=(
+                "<p>Recebemos uma solicitacao para redefinir sua senha no OddsEdge.</p>"
+                f"<p><a href=\"{link}\">Clique aqui para redefinir sua senha</a></p>"
+                f"<p>Este link expira em {max(int(duracao_minutos), 5)} minutos.</p>"
+                "<p>Se voce nao solicitou essa alteracao, pode ignorar este email.</p>"
+            ),
+        )
+        try:
+            EmailService.enviar_email(email_transacional)
+        except Exception as exc:
+            repositorio.cancelar_recuperacoes_ativas_por_usuario_id(int(usuario["id"]))
+            raise AutenticacaoErro("Nao foi possivel processar sua solicitacao agora.") from exc
+
+    @classmethod
+    def validar_token_recuperacao(
+        cls,
+        repositorio: RepositorioAcessoSQLite,
+        token: str,
+    ) -> dict[str, Any]:
+        token_limpo = str(token or "").strip()
+        if not token_limpo:
+            raise AutenticacaoErro("Link de recuperacao invalido.")
+        recuperacao = repositorio.buscar_recuperacao_ativa_por_token_hash(
+            cls.hash_token_recuperacao(token_limpo)
+        )
+        if not recuperacao:
+            raise AutenticacaoErro("Link de recuperacao invalido ou expirado.")
+        return recuperacao
+
+    @classmethod
+    def redefinir_senha_por_token(
+        cls,
+        repositorio: RepositorioAcessoSQLite,
+        *,
+        token: str,
+        senha: str,
+        confirmar_senha: str,
+    ) -> dict[str, Any]:
+        recuperacao = cls.validar_token_recuperacao(repositorio, token)
+        senha_limpa = str(senha or "")
+        confirmar_limpa = str(confirmar_senha or "")
+
+        if not senha_limpa:
+            raise AutenticacaoErro("Informe sua nova senha.")
+        cls.validar_senha_cadastro(
+            senha_limpa,
+            nome=str(recuperacao.get("nome") or ""),
+            email=str(recuperacao.get("email") or ""),
+        )
+        if senha_limpa != confirmar_limpa:
+            raise AutenticacaoErro("A confirmacao de senha nao confere.")
+
+        usuario_id = int(recuperacao["usuario_id"])
+        repositorio.atualizar_senha_usuario(usuario_id, cls.gerar_hash_senha(senha_limpa))
+        repositorio.marcar_recuperacao_senha_como_utilizada(int(recuperacao["recuperacao_id"]))
+        repositorio.cancelar_recuperacoes_ativas_por_usuario_id(usuario_id)
+        repositorio.encerrar_sessoes_por_usuario_id(usuario_id)
+
+        usuario_atualizado = repositorio.buscar_usuario_por_id(usuario_id)
+        if not usuario_atualizado:
+            raise RuntimeError("Falha ao recarregar o usuario apos redefinir a senha.")
+        return usuario_atualizado
 
     @classmethod
     def atualizar_plano_usuario(

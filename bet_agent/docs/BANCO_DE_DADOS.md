@@ -216,11 +216,36 @@ Regras:
 - o cookie do navegador guarda apenas o token real; o banco persiste somente `token_sessao_hash`
 - quando um usuario e bloqueado pela area admin, suas sessoes ativas sao invalidadas
 
+### `recuperacoes_senha`
+
+Estrutura de recuperacao de senha por token temporario.
+
+| Coluna | Tipo | Descricao |
+|---|---|---|
+| `id` | INTEGER | PK autoincremento |
+| `usuario_id` | INTEGER | FK para `usuarios.id` |
+| `token_hash` | TEXT | hash unico do token de recuperacao |
+| `criado_em` | TEXT | timestamp de criacao |
+| `atualizado_em` | TEXT | timestamp de atualizacao |
+| `expira_em` | TEXT | expiracao do link |
+| `utilizado_em` | TEXT | momento de uso, quando existir |
+| `cancelado_em` | TEXT | cancelamento por nova solicitacao ou erro |
+| `ip_solicitacao` | TEXT | IP de origem, quando disponivel |
+| `user_agent_solicitacao` | TEXT | user-agent da solicitacao |
+
+Regras:
+
+- `usuario_id` referencia `usuarios(id)`
+- indice por `usuario_id`
+- indice unico por `token_hash`
+- apenas tokens nao expirados, nao utilizados e nao cancelados sao aceitos
+- o token real nao fica salvo em texto puro no banco
+
 ## Bootstrap inicial
 
 Ao subir a camada web, o projeto inicializa de forma idempotente:
 
-- as tabelas `usuarios`, `planos` e `sessoes_usuario`
+- as tabelas `usuarios`, `planos`, `sessoes_usuario` e `recuperacoes_senha`
 - os planos `gratis` e `pro`
 - um usuario admin inicial, se ainda nao existir nenhum `perfil='admin'`
 

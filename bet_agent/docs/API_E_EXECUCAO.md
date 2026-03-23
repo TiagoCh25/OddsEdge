@@ -8,11 +8,13 @@
 - grava JSON atual
 - grava historico
 - persiste em SQLite
+- inicializa de forma idempotente a base de acesso e o admin inicial ao subir a web
 - sobe a web
 
 ### `python main.py serve`
 
 - sobe apenas a web
+- inicializa de forma idempotente a base de acesso e o admin inicial
 - nao executa pipeline na inicializacao
 
 ### `python main.py pipeline`
@@ -25,11 +27,36 @@
 
 ### `GET /`
 
-Retorna o dashboard HTML.
+Retorna a landing page comercial publica quando nao ha sessao autenticada.
+
+Se o usuario ja estiver autenticado, a rota redireciona para `GET /dashboard`.
+
+### `GET /planos`
+
+Retorna a landing comercial com foco na secao de planos. Pode ser usada como destino de CTAs de upgrade sem redirecionar usuarios autenticados para o dashboard.
+
+### `GET /dashboard`
+
+Retorna o dashboard HTML autenticado.
 
 ### `GET /bets`
 
-Retorna o payload atual com:
+Retorna o payload atual filtrado pelo perfil/plano do usuario autenticado.
+
+Regras de exibicao:
+
+- `gratis`: recebe apenas 1 recomendacao elegivel por dia, com odd minima `1.30`, inicio futuro e pelo menos 1 hora de antecedencia
+- `pro`: recebe todas as recomendacoes validas do momento
+- `admin`: recebe todas as recomendacoes validas do momento
+
+O payload inclui metadados extras para o frontend comunicar o estado da tela do dashboard, como:
+
+- `dashboard_estado`
+- `dashboard_mensagem`
+- `dashboard_mensagem_auxiliar`
+- `dashboard_mostrar_upgrade`
+
+Tambem retorna os campos usuais:
 
 - `generated_at`
 - `scores_updated_at`
@@ -82,6 +109,54 @@ Mantem a sessao ativa.
 
 Encerra a sessao ativa.
 
+### `GET /login`
+
+Retorna a tela HTML de login.
+
+### `POST /auth/login`
+
+Processa login por formulario HTML, valida email e senha, atualiza `ultimo_login_em`, cria uma sessao em `sessoes_usuario` e envia um cookie HTTPOnly para o navegador.
+
+### `GET /cadastro`
+
+Retorna a tela HTML de cadastro.
+
+### `POST /auth/cadastro`
+
+Processa cadastro por formulario HTML, valida nome, email e senha, persiste o usuario com `perfil=usuario`, `plano=gratis` e `status=ativo`, e redireciona para a tela de login.
+
+### `GET /esqueci-senha`
+
+Retorna a tela HTML para solicitar recuperacao de senha.
+
+### `POST /auth/esqueci-senha`
+
+Processa o pedido de recuperacao por email, gera um token unico com expiracao e envia o link por email ou salva em arquivo local conforme configuracao.
+
+### `GET /redefinir-senha`
+
+Retorna a tela HTML de redefinicao de senha a partir de um token valido.
+
+### `POST /auth/redefinir-senha`
+
+Valida o token de recuperacao, salva a nova senha em hash seguro, invalida o token e encerra sessoes antigas do usuario.
+
+### `POST /auth/logout`
+
+Invalida a sessao autenticada atual no banco, remove o cookie do navegador e redireciona para `GET /login`.
+
+### `GET /admin`
+
+Retorna a tela HTML da area admin inicial. Exige usuario autenticado com `perfil=admin`.
+
+### `POST /admin/usuarios/{id}/plano`
+
+Atualiza o plano do usuario entre `gratis` e `pro`. Exige `perfil=admin`.
+
+### `POST /admin/usuarios/{id}/status`
+
+Atualiza o status do usuario entre `ativo` e `bloqueado`. Exige `perfil=admin`.
+
 ## Comportamento especial do payload
 
 - se o cache contiver dados ficticios antigos em modo real, a API marca erro
@@ -94,3 +169,5 @@ Encerra a sessao ativa.
 - as casas sao ordenadas por odd descrescente; em empate, o sistema desempata por cobertura de mercados no jogo, depois por presenca da casa na rodada e por ultimo por ordem alfabetica
 - a busca de odds tenta primeiro um conjunto preferencial de bookmakers suportados pela The Odds API antes de abrir fallback
 - a vitrine final das casas considera a lista completa de casas relevantes definida no projeto
+- o dashboard HTML e os endpoints usados pela interface autenticada passam a exigir sessao valida
+- quando a sessao expira, o frontend redireciona o usuario para `GET /login`

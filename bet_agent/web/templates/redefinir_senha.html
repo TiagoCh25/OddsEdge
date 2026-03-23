@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>OddsEdge | Redefinir senha</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous" />
+  <link rel="stylesheet" href="/static/auth.css?v={{ static_version }}" />
+</head>
+<body class="auth-page">
+  <main class="auth-shell container">
+    <section class="auth-card">
+      <div class="auth-brand">
+        <div class="auth-kicker">Mais dados. Menos achismo.</div>
+        <h1 class="auth-logo">OddsEdge <span>⚽</span></h1>
+        <p class="auth-copy">Plataforma profissional de analise para apostas em futebol.</p>
+      </div>
+
+      <div class="auth-panel">
+        <div class="auth-panel-head">
+          <h2>{{ titulo }}</h2>
+          <p>{{ subtitulo }}</p>
+        </div>
+
+        {% if mensagem_erro %}
+        <div class="alert alert-danger" role="alert">{{ mensagem_erro }}</div>
+        {% endif %}
+
+        {% if mensagem_sucesso %}
+        <div class="alert alert-success" role="alert">{{ mensagem_sucesso }}</div>
+        {% endif %}
+
+        {% if token_valido %}
+        <form method="post" action="{{ acao }}" class="auth-form" novalidate>
+          <input type="hidden" name="token" value="{{ token }}" />
+
+          <div class="mb-3">
+            <label for="senha" class="form-label">Nova senha</label>
+            <input
+              type="password"
+              class="form-control form-control-lg"
+              id="senha"
+              name="senha"
+              placeholder="Nova senha"
+              autocomplete="new-password"
+              required
+            />
+          </div>
+
+          <div class="mb-3">
+            <label for="confirmar_senha" class="form-label">Confirmar nova senha</label>
+            <input
+              type="password"
+              class="form-control form-control-lg"
+              id="confirmar_senha"
+              name="confirmar_senha"
+              placeholder="Repita a nova senha"
+              autocomplete="new-password"
+              required
+            />
+          </div>
+
+          <button type="submit" class="btn btn-auth btn-lg w-100">Salvar nova senha</button>
+        </form>
+
+        <p class="auth-note">
+          Use pelo menos 10 caracteres e evite senha comum, sequencia simples ou dados pessoais.
+        </p>
+        {% else %}
+        <div class="auth-empty-state">
+          <p class="auth-note mb-0">Solicite um novo link para continuar com a recuperacao da sua conta.</p>
+        </div>
+        {% endif %}
+
+        <div class="auth-links">
+          <a href="/esqueci-senha">Solicitar novo link</a>
+          <a href="/login">Voltar para login</a>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

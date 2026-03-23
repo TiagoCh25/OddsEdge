@@ -40,6 +40,32 @@ Arquivos modelo:
 - `DIRETORIO_BANCO`: diretorio do banco SQLite
 - `NOME_ARQUIVO_BANCO`: nome do arquivo `.db`
 
+### Acesso inicial
+
+- `ADMIN_NOME_INICIAL`: nome do admin inicial
+- `ADMIN_EMAIL_INICIAL`: email do admin inicial
+- `ADMIN_SENHA_INICIAL`: senha do admin inicial
+- `AUTH_COOKIE_NAME`: nome do cookie de sessao autenticada
+- `AUTH_SESSION_DURATION_HOURS`: duracao da sessao autenticada em horas
+- `AUTH_COOKIE_SECURE`: envia o cookie autenticado apenas em HTTPS quando `true`
+- `APP_BASE_URL`: URL publica usada para montar links de recuperacao de senha
+- `RESET_SENHA_EXPIRACAO_MINUTOS`: validade do link de recuperacao
+- `EMAIL_MODO`: `arquivo` em local ou `smtp` quando houver entrega real
+- `EMAIL_REMETENTE`: remetente do email transacional
+- `SMTP_HOST`
+- `SMTP_PORT`
+- `SMTP_USUARIO`
+- `SMTP_SENHA`
+- `SMTP_TLS`
+
+No ambiente `local`, se essas variaveis nao forem definidas, o projeto usa por padrao:
+
+- `ADMIN_NOME_INICIAL=Admin`
+- `ADMIN_EMAIL_INICIAL=tiagoch25@gmail.com`
+- `ADMIN_SENHA_INICIAL=admin123`
+
+Em ambientes nao locais, o recomendado e definir explicitamente essas variaveis no processo ou no arquivo `.env.<APP_ENV>`.
+
 ### Pipeline e operacao
 
 - `SKIP_PIPELINE_ON_START`: sobe apenas a web
@@ -87,6 +113,16 @@ API_FOOTBALL_KEY=...
 THE_ODDS_API_KEY=...
 SERVER_PORT=8000
 ENABLE_IDLE_SHUTDOWN=true
+ADMIN_NOME_INICIAL=Admin
+ADMIN_EMAIL_INICIAL=tiagoch25@gmail.com
+ADMIN_SENHA_INICIAL=admin123
+AUTH_COOKIE_NAME=oddsedge_auth
+AUTH_SESSION_DURATION_HOURS=168
+AUTH_COOKIE_SECURE=false
+APP_BASE_URL=http://localhost:8000
+RESET_SENHA_EXPIRACAO_MINUTOS=60
+EMAIL_MODO=arquivo
+EMAIL_REMETENTE=no-reply@oddsedge.local
 ODDS_MAX_SPORTS_PER_RUN=2
 ODDS_PREFERRED_BOOKMAKERS=pinnacle,betfair_ex_eu,betfair_sb_uk,betway,onexbet
 ODDS_RELEVANT_BOOKMAKERS=pinnacle,bet365,betfair,betano,sportingbet,betway,novibet,1xbet,parimatch,kto,pixbet,estrelabet,betnacional,aposta ganha,bodog,galera.bet,esportivabet
@@ -103,4 +139,19 @@ SERVER_PORT=8000
 ENABLE_IDLE_SHUTDOWN=false
 DATA_DIR=/app/runtime
 DIRETORIO_BANCO=/app/runtime
+ADMIN_NOME_INICIAL=Admin
+ADMIN_EMAIL_INICIAL=admin@suaempresa.com
+ADMIN_SENHA_INICIAL=trocar-antes-de-subir
+AUTH_COOKIE_NAME=oddsedge_auth
+AUTH_SESSION_DURATION_HOURS=168
+AUTH_COOKIE_SECURE=true
+APP_BASE_URL=https://seu-dominio.com
+RESET_SENHA_EXPIRACAO_MINUTOS=60
+EMAIL_MODO=smtp
+EMAIL_REMETENTE=no-reply@seu-dominio.com
+SMTP_HOST=smtp.seu-provedor.com
+SMTP_PORT=587
+SMTP_USUARIO=usuario
+SMTP_SENHA=senha
+SMTP_TLS=true
 ```

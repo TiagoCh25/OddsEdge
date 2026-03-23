@@ -20,6 +20,11 @@ Se a API-Football falhar, o pipeline para antes de consultar odds. Se a The Odds
 Se um jogo especifico falhar ao montar estatisticas, ele e ignorado, o erro fica registrado e o restante da execucao continua normalmente.
 O dashboard destaca placares ao vivo no proprio nome do confronto e mostra, em cada aposta, as 3 melhores casas por odd dentre as operadoras relevantes priorizadas no projeto.
 O dashboard do cliente nao expoe botao de compartilhamento.
+A camada web inicializa de forma idempotente a base de acesso no mesmo SQLite do projeto, incluindo os planos `gratis` e `pro` e o admin inicial configurado por ambiente.
+Login, cadastro e logout usam sessao por cookie HTTPOnly, e o dashboard HTML agora exige usuario autenticado. A area `/admin` foi adicionada com controle de acesso por perfil.
+O fluxo de recuperacao de senha usa token unico com expiracao, enviado por email ou salvo em arquivo local conforme configuracao.
+No dashboard, usuarios `gratis` veem apenas 1 recomendacao elegivel por dia, enquanto `pro` e `admin` veem todas as recomendacoes validas do momento.
+Agora `GET /` funciona como landing page comercial publica, enquanto usuarios autenticados sao redirecionados para `GET /dashboard`.
 
 ## Requisitos
 
@@ -59,9 +64,23 @@ python main.py pipeline
 
 ## Endpoints
 
-- `GET /`: dashboard HTML
-- `GET /bets`: payload atual com recomendacoes
+- `GET /`: landing page publica
+- `GET /planos`: landing publica com foco comercial nos planos
+- `GET /dashboard`: dashboard HTML autenticado
+- `GET /bets`: payload atual filtrado pelo plano do usuario autenticado
 - `GET /health`: healthcheck da aplicacao e das APIs externas
+- `GET /login`: tela de login
+- `POST /auth/login`: processa login e cria sessao autenticada
+- `GET /cadastro`: tela de cadastro
+- `POST /auth/cadastro`: cria conta de usuario
+- `GET /esqueci-senha`: tela para solicitar recuperacao de senha
+- `POST /auth/esqueci-senha`: gera link temporario de recuperacao
+- `GET /redefinir-senha`: tela publica para redefinir senha por token
+- `POST /auth/redefinir-senha`: salva a nova senha e invalida sessoes antigas
+- `POST /auth/logout`: encerra a sessao autenticada atual
+- `GET /admin`: painel admin inicial protegido para `perfil=admin`
+- `POST /admin/usuarios/{id}/plano`: atualiza plano de usuario
+- `POST /admin/usuarios/{id}/status`: atualiza status de usuario
 - `POST /session/start`
 - `POST /session/heartbeat`
 - `POST /session/end`
@@ -79,7 +98,7 @@ Por padrao, a aplicacao grava:
 
 - `cache_matches.json`: estado atual da ultima execucao
 - `history/YYYY/MM/DD/<execucao_id>.json`: historico por execucao
-- `historico_apostas.db`: banco SQLite
+- `historico_apostas.db`: banco SQLite com historico operacional e base de acesso
 
 Se `DATA_DIR` for definido, os arquivos acima passam a ser gravados nesse diretorio de runtime.
 

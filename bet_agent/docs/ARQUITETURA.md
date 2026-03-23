@@ -9,7 +9,7 @@ Componentes principais:
 - `api/`: integracao com API-Football e The Odds API
 - `models/`: modelo estatistico de Poisson
 - `services/`: regras de negocio para probabilidade e avaliacao de apostas
-- `db/`: persistencia historica em SQLite
+- `db/`: persistencia historica e base de acesso em SQLite
 - `web/`: FastAPI, templates e arquivos estaticos
 - `app/`: configuracao central e orquestracao do pipeline
 
@@ -50,6 +50,7 @@ Componentes principais:
 
 - reaproveita recomendacoes validas do dia quando ha falha temporaria de odds
 - persiste historico local por JSON e SQLite
+- inicializa de forma idempotente a base de acesso no mesmo SQLite ao subir a camada web
 - usa `healthcheck` para operacao em container e VPS
 - expoe saude agregada das APIs externas em `/health` com cache curto
 - isola erro por partida: registra o problema e ignora apenas o jogo afetado
@@ -64,5 +65,11 @@ Componentes principais:
 - `main.py`: entrypoint da aplicacao
 - `app/config.py`: configuracao central via variaveis de ambiente
 - `app/main.py`: pipeline diario e CLI simples
+- `app/bootstrap_acesso.py`: bootstrap idempotente das tabelas de acesso e do admin inicial
 - `web/server.py`: API web e dashboard
+- `web/auth_routes.py`: telas e rotas de login, cadastro e logout
+- `web/dependencies.py`: resolucao opcional da sessao autenticada atual
+- `web/admin_routes.py`: painel admin inicial e acoes basicas de usuarios
 - `db/repositorio_historico.py`: schema e persistencia SQLite
+- `db/repositorio_acesso.py`: schema e persistencia de usuarios, planos e sessoes
+- `services/autenticacao_service.py`: hash seguro de senha e bootstrap do admin inicial

@@ -28,6 +28,10 @@
     gameSelect: document.getElementById("game-filter"),
     betTypeSelect: document.getElementById("bet-type-filter"),
     betsTableBody: document.getElementById("bets-table-body"),
+    planStateBanner: document.getElementById("plan-state-banner"),
+    planStateTitle: document.getElementById("plan-state-title"),
+    planStateSubtitle: document.getElementById("plan-state-subtitle"),
+    planStateCta: document.getElementById("plan-state-cta"),
   };
 
   function toNumber(value, fallback = 0) {
@@ -90,6 +94,40 @@
     elements.statusMessage.classList.remove("status-message-info", "status-message-error");
     if (!text) return;
     elements.statusMessage.classList.add(type === "error" ? "status-message-error" : "status-message-info");
+  }
+
+  function redirectToLogin(message = "Sua sessão expirou. Entre novamente.") {
+    stopStalePolling();
+    sessionClosed = true;
+    if (heartbeatTimer) {
+      clearInterval(heartbeatTimer);
+      heartbeatTimer = null;
+    }
+    const query = new URLSearchParams({ erro: String(message || "") });
+    window.location.href = `/login?${query.toString()}`;
+  }
+
+  async function ensureAuthenticatedResponse(response) {
+    if (response.redirected && String(response.url || "").includes("/login")) {
+      redirectToLogin();
+      return null;
+    }
+
+    if (response.status === 401) {
+      let detail = "Sua sessão expirou. Entre novamente.";
+      try {
+        const payload = await response.json();
+        if (payload?.detail) {
+          detail = String(payload.detail);
+        }
+      } catch (_error) {
+        detail = "Sua sessão expirou. Entre novamente.";
+      }
+      redirectToLogin(detail);
+      return null;
+    }
+
+    return response;
   }
 
   function uniqueGameCount(bets) {
@@ -619,6 +657,31 @@
     }
   }
 
+  function renderPlanState(payload) {
+    if (!(elements.planStateBanner instanceof HTMLElement)) return;
+
+    const mensagem = String(payload?.dashboard_mensagem || "").trim();
+    const mensagemAuxiliar = String(payload?.dashboard_mensagem_auxiliar || "").trim();
+    const mostrarUpgrade = Boolean(payload?.dashboard_mostrar_upgrade);
+
+    if (!mensagem && !mensagemAuxiliar) {
+      elements.planStateBanner.classList.add("d-none");
+      if (elements.planStateTitle) elements.planStateTitle.textContent = "";
+      if (elements.planStateSubtitle) elements.planStateSubtitle.textContent = "";
+      if (elements.planStateCta) elements.planStateCta.innerHTML = "";
+      return;
+    }
+
+    elements.planStateBanner.classList.remove("d-none");
+    if (elements.planStateTitle) elements.planStateTitle.textContent = mensagem;
+    if (elements.planStateSubtitle) elements.planStateSubtitle.textContent = mensagemAuxiliar;
+    if (elements.planStateCta) {
+      elements.planStateCta.innerHTML = mostrarUpgrade
+        ? '<a href="/planos#planos" class="dashboard-plan-pill">Plano Pro</a>'
+        : "";
+    }
+  }
+
   function renderMetrics(payload, bets) {
     const games = toNumber(payload?.total_games_analyzed, uniqueGameCount(bets));
     const betCount = toNumber(payload?.total_bets, bets.length);
@@ -772,7 +835,11 @@
   async function loadDashboard() {
     try {
       const response = await fetch("/bets", { cache: "no-store" });
-      const payload = await response.json();
+      const authResponse = await ensureAuthenticatedResponse(response);
+      if (!authResponse) {
+        return { hasError: true, isFresh: false };
+      }
+      const payload = await authResponse.json();
       const hasError = Boolean(payload?.error_message) || String(payload?.status || "").toLowerCase() === "error";
       const isFresh = isPayloadFromToday(payload);
       const warningMessage = String(payload?.warning_message || "").trim();
@@ -781,6 +848,7 @@
       cachedBets = Array.isArray(payload?.bets) ? payload.bets : [];
 
       renderMeta(payload);
+      renderPlanState(payload);
       renderMetrics(payload, cachedBets);
       rerender();
 
@@ -804,9 +872,10 @@
 
   async function startBrowserSession() {
     const response = await fetch("/session/start", { method: "POST" });
-    if (!response.ok) return;
+    const authResponse = await ensureAuthenticatedResponse(response);
+    if (!authResponse || !authResponse.ok) return;
 
-    const payload = await response.json();
+    const payload = await authResponse.json();
     sessionId = payload.session_id;
 
     heartbeatTimer = setInterval(() => {
@@ -814,7 +883,9 @@
       fetch(`/session/heartbeat?session_id=${encodeURIComponent(sessionId)}`, {
         method: "POST",
         keepalive: true,
-      });
+      })
+        .then(ensureAuthenticatedResponse)
+        .catch(() => {});
     }, 10000);
   }
 

@@ -6,23 +6,42 @@ import json
 import os
 import threading
 import time
+from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Optional
 from uuid import uuid4
 
 import uvicorn
-from fastapi import FastAPI, Request, Response
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from api.football_api import FootballAPI
 from api.odds_api import OddsAPI
+from app.bootstrap_acesso import inicializar_base_acesso
 from app.config import settings
 from db.repositorio_historico import RepositorioHistoricoSQLite
+from services.dashboard_service import DashboardService
+from web.admin_routes import router as admin_router
+from web.auth_routes import router as auth_router
+from web.dependencies import (
+    exigir_usuario_logado,
+    obter_usuario_logado_opcional,
+    redirecionar_para_login,
+)
 
-app = FastAPI(title="Bet Agent", version="1.0.0")
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    inicializar_base_acesso()
+    yield
+
+
+app = FastAPI(title="Bet Agent", version="1.0.0", lifespan=lifespan)
+app.include_router(auth_router)
+app.include_router(admin_router)
 
 
 def _build_ui_version() -> str:
@@ -358,20 +377,65 @@ def _get_cached_api_health() -> Dict[str, Any]:
         return snapshot
 
 
+def _render_landing_page(request: Request, *, usuario_autenticado: bool) -> HTMLResponse:
+    response = templates.TemplateResponse(
+        request,
+        "landing.html",
+        {
+            "request": request,
+            "static_version": str(int(time.time())),
+            "ui_version": UI_VERSION,
+            "usuario_autenticado": usuario_autenticado,
+        },
+    )
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request) -> Any:
+    usuario_atual = obter_usuario_logado_opcional(request)
+    if usuario_atual:
+        return RedirectResponse(url="/dashboard", status_code=303)
+    return _render_landing_page(request, usuario_autenticado=False)
+
+
+@app.get("/planos", response_class=HTMLResponse)
+def planos_page(request: Request) -> HTMLResponse:
+    return _render_landing_page(
+        request,
+        usuario_autenticado=bool(obter_usuario_logado_opcional(request)),
+    )
+
+
+@app.get("/dashboard", response_class=HTMLResponse)
+def dashboard(request: Request) -> Any:
+    try:
+        usuario_atual = exigir_usuario_logado(request)
+    except HTTPException:
+        return redirecionar_para_login("Sua sessao expirou. Entre novamente.")
+
     response = templates.TemplateResponse(
+        request,
         "index.html",
-        {"request": request, "static_version": str(int(time.time())), "ui_version": UI_VERSION},
+        {
+            "request": request,
+            "static_version": str(int(time.time())),
+            "ui_version": UI_VERSION,
+            "usuario_nome": str(usuario_atual.get("nome") or ""),
+            "usuario_perfil": str(usuario_atual.get("perfil") or ""),
+            "usuario_plano": str(usuario_atual.get("plano") or ""),
+        },
     )
     response.headers["Cache-Control"] = "no-store"
     return response
 
 
 @app.get("/bets")
-def bets(response: Response) -> Dict[str, Any]:
+def bets(request: Request, response: Response) -> Dict[str, Any]:
+    usuario_atual = exigir_usuario_logado(request)
     response.headers["Cache-Control"] = "no-store"
-    return load_payload()
+    return DashboardService.preparar_payload_dashboard(load_payload(), usuario_atual)
 
 
 @app.get("/health")
@@ -388,17 +452,20 @@ def health() -> Dict[str, Any]:
 
 
 @app.post("/session/start")
-def start_session() -> Dict[str, str]:
+def start_session(request: Request) -> Dict[str, str]:
+    exigir_usuario_logado(request)
     return {"session_id": session_manager.start_session()}
 
 
 @app.post("/session/heartbeat")
-def session_heartbeat(session_id: str) -> Dict[str, bool]:
+def session_heartbeat(request: Request, session_id: str) -> Dict[str, bool]:
+    exigir_usuario_logado(request)
     return {"ok": session_manager.heartbeat(session_id)}
 
 
 @app.post("/session/end")
-def end_session(session_id: str) -> Dict[str, bool]:
+def end_session(request: Request, session_id: str) -> Dict[str, bool]:
+    exigir_usuario_logado(request)
     session_manager.end_session(session_id)
     return {"ok": True}
 

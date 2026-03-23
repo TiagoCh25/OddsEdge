@@ -102,6 +102,31 @@ body {
   color: var(--muted);
 }
 
+.dashboard-user-meta {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.38rem;
+  flex-wrap: wrap;
+}
+
+.dashboard-user-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.18rem 0.58rem;
+  border-radius: 999px;
+  background: rgba(22, 199, 132, 0.12);
+  color: #047857;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.dashboard-user-badge-muted {
+  background: rgba(15, 23, 42, 0.08);
+  color: #334155;
+}
+
 .panel-shell {
   padding: 1.15rem 1.2rem;
   border: 1px solid rgba(203, 213, 225, 0.74);
@@ -197,6 +222,61 @@ body {
   display: grid;
   grid-template-columns: repeat(4, minmax(180px, 1fr));
   gap: 0.9rem;
+}
+
+.dashboard-plan-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 1rem 1.05rem;
+  border: 1px solid rgba(15, 108, 189, 0.14);
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(15, 108, 189, 0.06), rgba(22, 199, 132, 0.06));
+}
+
+.dashboard-plan-copy {
+  min-width: 0;
+}
+
+.dashboard-plan-title {
+  font-size: 0.98rem;
+  font-weight: 900;
+  color: var(--brand-dark);
+}
+
+.dashboard-plan-subtitle {
+  margin-top: 0.18rem;
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.6;
+}
+
+.dashboard-plan-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0.5rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid rgba(15, 108, 189, 0.16);
+  background: rgba(255, 255, 255, 0.92);
+  color: #0f6cbd;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.dashboard-plan-pill:hover,
+.dashboard-plan-pill:focus {
+  color: #0b5cab;
+  border-color: rgba(15, 108, 189, 0.28);
+  background: #ffffff;
+  text-decoration: none;
 }
 
 .filter-field {
@@ -887,6 +967,11 @@ body {
 
   .panel-shell {
     padding: 0.95rem;
+  }
+
+  .dashboard-plan-banner {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .hero-header {

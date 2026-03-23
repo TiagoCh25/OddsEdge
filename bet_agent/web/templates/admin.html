@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>OddsEdge | Admin</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous" />
+  <link rel="stylesheet" href="/static/admin.css?v={{ static_version }}" />
+</head>
+<body class="admin-page">
+  <main class="container py-4 py-lg-5">
+    <section class="admin-shell">
+      <header class="admin-topbar">
+        <div>
+          <div class="admin-kicker">OddsEdge ⚽</div>
+          <h1 class="admin-title">Painel administrativo inicial</h1>
+          <p class="admin-subtitle mb-0">Controle de acesso, usuarios e planos do MVP.</p>
+        </div>
+
+        <div class="admin-actions">
+          <div class="admin-user">
+            <span class="admin-user-label">Logado como</span>
+            <strong>{{ usuario_atual.get('nome', 'Admin') }}</strong>
+          </div>
+          <a href="/dashboard" class="btn btn-outline-dark">Dashboard</a>
+          <form method="post" action="/auth/logout" class="m-0">
+            <button type="submit" class="btn btn-dark">Sair</button>
+          </form>
+        </div>
+      </header>
+
+      {% if mensagem_erro %}
+      <div class="alert alert-danger" role="alert">{{ mensagem_erro }}</div>
+      {% endif %}
+
+      {% if mensagem_sucesso %}
+      <div class="alert alert-success" role="alert">{{ mensagem_sucesso }}</div>
+      {% endif %}
+
+      <section class="row g-3 mb-4">
+        <div class="col-12 col-md-6 col-xl-3">
+          <article class="admin-metric-card">
+            <div class="admin-metric-label">Total de usuários</div>
+            <div class="admin-metric-value">{{ resumo.get('total_usuarios', 0) }}</div>
+          </article>
+        </div>
+        <div class="col-12 col-md-6 col-xl-3">
+          <article class="admin-metric-card">
+            <div class="admin-metric-label">Total de admins</div>
+            <div class="admin-metric-value">{{ resumo.get('total_admins', 0) }}</div>
+          </article>
+        </div>
+        <div class="col-12 col-md-6 col-xl-3">
+          <article class="admin-metric-card">
+            <div class="admin-metric-label">Plano grátis</div>
+            <div class="admin-metric-value">{{ resumo.get('total_plano_gratis', 0) }}</div>
+          </article>
+        </div>
+        <div class="col-12 col-md-6 col-xl-3">
+          <article class="admin-metric-card">
+            <div class="admin-metric-label">Plano pro</div>
+            <div class="admin-metric-value">{{ resumo.get('total_plano_pro', 0) }}</div>
+          </article>
+        </div>
+      </section>
+
+      <section class="admin-panel">
+        <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap mb-3">
+          <div>
+            <h2 class="admin-section-title mb-1">Usuários</h2>
+            <p class="admin-section-copy mb-0">Atualize plano e status sem sair do painel.</p>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-hover admin-table align-middle">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nome</th>
+                <th>Email</th>
+                <th>Perfil</th>
+                <th>Plano</th>
+                <th>Status</th>
+                <th>Criado em</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for usuario in usuarios %}
+              <tr>
+                <td>{{ usuario.get('id') }}</td>
+                <td>{{ usuario.get('nome') }}</td>
+                <td>{{ usuario.get('email') }}</td>
+                <td><span class="badge text-bg-secondary">{{ usuario.get('perfil') }}</span></td>
+                <td><span class="badge text-bg-light">{{ usuario.get('plano') }}</span></td>
+                <td>
+                  {% if usuario.get('status') == 'ativo' %}
+                  <span class="badge text-bg-success">ativo</span>
+                  {% else %}
+                  <span class="badge text-bg-danger">bloqueado</span>
+                  {% endif %}
+                </td>
+                <td>{{ usuario.get('criado_em') }}</td>
+                <td>
+                  <div class="admin-form-grid">
+                    <form method="post" action="/admin/usuarios/{{ usuario.get('id') }}/plano" class="admin-inline-form">
+                      <select name="plano" class="form-select form-select-sm">
+                        <option value="gratis" {% if usuario.get('plano') == 'gratis' %}selected{% endif %}>gratis</option>
+                        <option value="pro" {% if usuario.get('plano') == 'pro' %}selected{% endif %}>pro</option>
+                      </select>
+                      <button type="submit" class="btn btn-sm btn-outline-primary">Salvar plano</button>
+                    </form>
+
+                    <form method="post" action="/admin/usuarios/{{ usuario.get('id') }}/status" class="admin-inline-form">
+                      <select name="status" class="form-select form-select-sm">
+                        <option value="ativo" {% if usuario.get('status') == 'ativo' %}selected{% endif %}>ativo</option>
+                        <option value="bloqueado" {% if usuario.get('status') == 'bloqueado' %}selected{% endif %}>bloqueado</option>
+                      </select>
+                      <button type="submit" class="btn btn-sm btn-outline-dark">Salvar status</button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+  </main>
+</body>
+</html>
